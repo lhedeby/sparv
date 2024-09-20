@@ -1,0 +1,7 @@
+fun test(a, b) {
+    print "hello!" + a + b;
+}
+
+test(123, 456);
+print a;
+
