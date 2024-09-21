@@ -1,11 +1,16 @@
+
 fun test() {
     print "hello";
     return;
 }
+
+
 
 s = test();
 print s;
 
 v = read_input;
 
+
 print "you wrote: " + v;
+

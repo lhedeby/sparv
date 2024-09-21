@@ -64,7 +64,10 @@ pub struct Scanner {
     source: String,
 }
 
-enum LexingError {
+#[derive(Debug)]
+struct LexingError {
+    line: usize,
+    column: usize,
 }
 
 type Result<T> = std::result::Result<T, LexingError>;
@@ -80,7 +83,10 @@ impl Scanner {
         };
         let mut res = vec![];
         loop {
-            let token = scanner.next_token();
+            let token = match scanner.next_token() {
+                Ok(token) => token,
+                Err(e) => panic!("Error lexing at line {}:{}", e.line, e.column),
+            };
             let kind = token.kind;
             res.push(token);
             match kind {
@@ -91,14 +97,14 @@ impl Scanner {
         res
     }
 
-    fn next_token(&mut self) -> Token {
-        self.skip_whitespace();
+    fn next_token(&mut self) -> Result<Token> {
+        self.skip_whitespace()?;
         self.start = self.current;
         if self.is_at_end() {
             return self.make_token(TokenKind::Eof);
         }
 
-        let c = self.advance();
+        let c = self.advance()?;
         if c.is_ascii_alphabetic() {
             return self.identifier();
         }
@@ -157,15 +163,16 @@ impl Scanner {
             _ => {}
         }
 
-        self.error_token("Unexpected character")
+        // Unexpected character
+        Err(self.error())
     }
 
-    fn identifier(&mut self) -> Token {
+    fn identifier(&mut self) -> Result<Token> {
         while self
             .peek()
             .is_some_and(|c| c.is_ascii_alphabetic() || c.is_digit(10) || c == '_')
         {
-            self.advance();
+            self.advance()?;
         }
         self.make_token(self.identifier_kind())
     }
@@ -194,7 +201,6 @@ impl Scanner {
             ("new".to_string(), TokenKind::New),
             ("read_file".to_string(), TokenKind::ReadFile),
             ("read_input".to_string(), TokenKind::ReadInput),
-
         ]
     }
 
@@ -209,38 +215,38 @@ impl Scanner {
         TokenKind::Identifier
     }
 
-    fn number(&mut self) -> Token {
+    fn number(&mut self) -> Result<Token> {
         while self.peek().is_some() && self.peek().unwrap().is_digit(10) {
-            self.advance();
+            self.advance()?;
         }
         self.make_token(TokenKind::Number)
     }
 
-    fn string(&mut self) -> Token {
+    fn string(&mut self) -> Result<Token> {
         while self.peek().is_some() && self.peek().unwrap() != '"' && !self.is_at_end() {
             if self.peek().unwrap() == '\n' {
                 self.line += 1;
-                self.advance();
+                self.advance()?;
             }
-            self.advance();
+            self.advance()?;
         }
         if self.is_at_end() {
-            return self.error_token("unterminated string");
+            // unterminated string
+            return Err(self.error());
         }
-        self.advance();
+        self.advance()?;
         self.make_token(TokenKind::String)
     }
 
-    fn skip_whitespace(&mut self) {
+    fn skip_whitespace(&mut self) -> Result<()> {
         loop {
-            let temp = self.peek();
-            if let Some(c) = temp {
+            if let Some(c) = self.peek() {
                 match c {
                     ' ' | '\r' | '\t' => _ = self.advance(),
                     '\n' => {
                         self.line += 1;
                         self.column = 0;
-                        self.advance();
+                        self.advance()?;
                     }
                     '/' => {
                         if self.peek_next().is_some() && self.peek_next().unwrap() == '/' {
@@ -248,7 +254,7 @@ impl Scanner {
                                 && self.peek().unwrap() != '\n'
                                 && !self.is_at_end()
                             {
-                                self.advance();
+                                self.advance()?;
                             }
                         } else {
                             break;
@@ -260,6 +266,7 @@ impl Scanner {
                 break;
             }
         }
+        Ok(())
     }
 
     fn peek_next(&self) -> Option<char> {
@@ -284,26 +291,44 @@ impl Scanner {
         true
     }
 
-    fn advance(&mut self) -> char {
+    fn advance(&mut self) -> Result<char> {
         self.column += 1;
         self.current += 1;
-        self.source.chars().nth(self.current - 1).unwrap()
+        self.source
+            .chars()
+            .nth(self.current - 1)
+            .ok_or(self.error())
     }
 
-    fn make_token(&self, kind: TokenKind) -> Token {
+    fn make_token(&self, kind: TokenKind) -> Result<Token> {
         match kind {
-            TokenKind::String => Token {
+            TokenKind::String => Ok(Token {
                 kind,
                 line: self.line,
                 column: self.column,
-                value: self.source[(self.start + 1)..(self.current - 1)].to_string(),
-            },
-            _ => Token {
+                value: self
+                    .source
+                    .get((self.start + 1)..(self.current - 1))
+                    .ok_or(self.error())?
+                    .to_string(),
+            }),
+            _ => Ok(Token {
                 kind,
                 line: self.line,
                 column: self.column,
-                value: self.source[self.start..self.current].to_string(),
-            },
+                value: self
+                    .source
+                    .get(self.start..self.current)
+                    .ok_or(self.error())?
+                    .to_string(),
+            }),
+        }
+    }
+
+    fn error(&self) -> LexingError {
+        LexingError {
+            line: self.line,
+            column: self.column,
         }
     }
 
