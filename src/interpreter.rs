@@ -1,76 +1,116 @@
 use std::collections::HashMap;
+use std::io::{self, Read};
 
 use crate::parser::{Declaration, Expr, Statement};
 use crate::scanner::TokenKind as TK;
 
-pub struct Interpreter {
-    variables: HashMap<String, V>,
+pub struct Interpreter {}
+
+pub struct Variables {
+    variables: Vec<HashMap<String, V>>,
+    return_value: Option<V>,
+}
+
+impl Variables {
+    fn add(&mut self, s: String, value: V) {
+        self.variables.last_mut().unwrap().insert(s, value);
+    }
+    fn begin_scope(&mut self) {
+        self.variables.push(HashMap::new());
+    }
+    fn end_scope(&mut self) {
+        self.variables.pop();
+    }
+    fn new() -> Variables {
+        Self {
+            variables: vec![HashMap::new()],
+            return_value: None,
+        }
+    }
+    fn get(&mut self, name: &str) -> &V {
+        for v in self.variables.iter().rev() {
+            if let Some(res) = v.get(name) {
+                return res;
+            }
+        }
+        panic!("no variable found")
+    }
+    fn get_mut(&mut self, name: &str) -> &mut V {
+        for v in self.variables.iter_mut().rev() {
+            if let Some(res) = v.get_mut(name) {
+                return res;
+            }
+        }
+        panic!("no variable found")
+    }
 }
 
 impl Interpreter {
     pub fn interpret(declarations: Vec<Declaration>) {
-        let mut interpreter = Interpreter {
-            variables: HashMap::new(),
-        };
+        let mut vars = Variables::new();
         for decl in declarations {
             println!("parsing: {:?}", decl);
-            decl.interpret(&mut interpreter);
+            decl.interpret(&mut vars);
         }
     }
 }
 
 impl Declaration {
-    pub fn interpret(&self, interpreter: &mut Interpreter) {
+    pub fn interpret(&self, vars: &mut Variables) {
         match self {
             Declaration::Function(name, params, stmts) => {
                 println!("DECLARING FUNCTION: {name}, params: {:?}", params);
-                interpreter
-                    .variables
-                    .insert(name.to_string(), V::Func(params.to_vec(), stmts.to_vec()));
+                vars.add(name.to_string(), V::Func(params.to_vec(), stmts.to_vec()));
             }
-            Declaration::Statement(stmt) => stmt.interpret(interpreter),
+            Declaration::Statement(stmt) => stmt.interpret(vars),
         }
     }
 }
 
 impl Statement {
-    pub fn interpret(&self, interpreter: &mut Interpreter) {
+    pub fn interpret(&self, vars: &mut Variables) {
         match self {
             Statement::Expression(expr) => {
-                _ = expr.interpret(interpreter);
+                _ = expr.interpret(vars);
             }
             Statement::Let(name, expr) => {
-                let expr = expr.interpret(interpreter);
-                interpreter.variables.insert(name.to_string(), expr);
+                let expr = expr.interpret(vars);
+                vars.add(name.to_string(), expr);
             }
             Statement::For => todo!(),
             Statement::If(expr, if_stmts, else_stmts) => {
-                if expr.interpret(interpreter).as_bool() {
+                if expr.interpret(vars).as_bool() {
                     for stmt in if_stmts {
-                        stmt.interpret(interpreter)
+                        stmt.interpret(vars)
                     }
                 } else {
                     for stmt in else_stmts {
-                        stmt.interpret(interpreter)
+                        stmt.interpret(vars)
                     }
                 }
             }
             Statement::Print(expr) => {
-                let value = expr.interpret(interpreter);
+                let value = expr.interpret(vars);
                 match value {
                     V::String(s) => println!("{s}"),
                     V::Number(n) => println!("{n}"),
                     V::Bool(b) => println!("{b}"),
                     V::Obj(o) => println!("{:?}", o),
                     V::Func(..) => todo!("print function"),
-                    V::Nil => println!("NIL"),
+                    V::Null => println!("NULL"),
+                    V::List(..) => todo!("print list"),
                 }
             }
-            Statement::Return(_) => todo!(),
+            Statement::Return(expr) => {
+                // set return value in variables?
+                let v = expr.interpret(vars);
+                vars.return_value = Some(v);
+                println!("expr {:?}", expr);
+            }
             Statement::While(expr, stmts) => {
-                while expr.interpret(interpreter).as_bool() {
+                while expr.interpret(vars).as_bool() {
                     for stmt in stmts {
-                        stmt.interpret(interpreter);
+                        stmt.interpret(vars);
                     }
                 }
             }
@@ -80,16 +120,16 @@ impl Statement {
 }
 
 impl Expr {
-    pub fn interpret(&self, interpreter: &mut Interpreter) -> V {
+    pub fn interpret(&self, vars: &mut Variables) -> V {
         match self {
             Expr::Prefix(token_kind, expr) => match token_kind {
-                TK::Minus => V::Number(-expr.interpret(interpreter).as_num()),
-                TK::Bang => V::Bool(!expr.interpret(interpreter).as_bool()),
+                TK::Minus => V::Number(-expr.interpret(vars).as_num()),
+                TK::Bang => V::Bool(!expr.interpret(vars).as_bool()),
                 _ => panic!("not valid prefixtoken '{:?}'", token_kind),
             },
             Expr::Operator(lhs, token_kind, rhs) => {
-                let expr1 = lhs.interpret(interpreter);
-                let expr2 = rhs.interpret(interpreter);
+                let expr1 = lhs.interpret(vars);
+                let expr2 = rhs.interpret(vars);
                 match (expr1, token_kind, expr2) {
                     /*
                      *   Arithmetic
@@ -151,7 +191,7 @@ impl Expr {
                      *   Reassignment
                      */
                     (V::String(s), TK::Equal, v) => {
-                        interpreter.variables.insert(s, v);
+                        vars.add(s, v);
                         V::Number(0.0)
                     }
                     (a1, a2, a3) => panic!("what is this got: '{:?}', '{:?}', '{:?}'", a1, a2, a3),
@@ -160,15 +200,16 @@ impl Expr {
             Expr::Number(n) => V::Number(*n),
             Expr::String(s) => V::String(s.to_string()),
             Expr::Bool(b) => V::Bool(*b),
-            Expr::Variable(s) => interpreter.variables.get(s).unwrap().clone(),
+            Expr::Null => V::Null,
+            Expr::Variable(s) => vars.get(s).clone(),
             Expr::Object(fields) => {
                 let mut map = HashMap::new();
                 for f in fields {
                     match f {
                         Expr::Operator(identifier, op, expr) => {
                             assert_eq!(op, &TK::Equal);
-                            let test = identifier.interpret(interpreter).as_string();
-                            map.insert(test, expr.interpret(interpreter));
+                            let test = identifier.interpret(vars).as_string();
+                            map.insert(test, expr.interpret(vars));
                         }
                         _ => panic!("must be operator."),
                     }
@@ -176,52 +217,86 @@ impl Expr {
                 V::Obj(map)
             }
             Expr::Get(s, expr) => expr
-                .interpret(interpreter)
+                .interpret(vars)
                 .as_mut_obj()
                 .get_mut(s)
                 .unwrap()
                 .clone(),
             Expr::Set(s, g_expr, expr) => {
-                let resolved = expr.interpret(interpreter);
-                resolve_get(g_expr.clone(), interpreter)
+                let resolved = expr.interpret(vars);
+                resolve_get(g_expr.clone(), vars)
                     .as_mut_obj()
                     .insert(s.to_string(), resolved);
                 V::Bool(true)
             }
             Expr::Call(params, expr) => {
-                println!("call!");
-                println!("expr {:?}", expr);
-                println!("{:?}", interpreter.variables);
-                println!("params {:?}", params);
-                match expr.interpret(interpreter) {
+                vars.begin_scope();
+                match expr.interpret(vars) {
                     V::Func(param_names, stmts) => {
                         if param_names.len() != params.len() {
                             panic!("wrong amount of parameters")
                         }
                         for (name, param_expr) in std::iter::zip(param_names, params) {
-                            let res = param_expr.interpret(interpreter);
-                            interpreter.variables.insert(name, res);
+                            let res = param_expr.interpret(vars);
+                            vars.add(name, res);
                         }
                         for stmt in stmts {
-                            stmt.interpret(interpreter)
+                            stmt.interpret(vars);
+
+                            if vars.return_value.is_some() {
+                                vars.end_scope();
+                                let val = vars.return_value.as_mut().unwrap().clone();
+                                vars.return_value = None;
+                                return val;
+                            }
                         }
                     }
                     _ => panic!("Expected function"),
                 }
-                V::Nil
+                vars.end_scope();
+                V::Null
+            }
+            Expr::List(items) => V::List(items.iter().map(|x| x.interpret(vars)).collect()),
+            Expr::Index(list, index) => match list.interpret(vars) {
+                V::List(items) => items
+                    .get(index.interpret(vars).as_num() as usize)
+                    .unwrap()
+                    .clone(),
+                _ => panic!("cant index non-list"),
+            },
+            Expr::SetList(list, index, new) => {
+                let new_val = new.interpret(vars);
+                let idx = index.interpret(vars).as_num() as usize;
+                let resolved = resolve_get(list.clone(), vars).as_mut_list();
+                resolved[idx] = new_val;
+                V::Null
+            }
+            Expr::ReadFile(expr) => {
+                println!("trying to read file: {:?}", expr);
+                let file_path = expr.interpret(vars).as_string();
+                match std::fs::read_to_string(file_path.clone()) {
+                    Ok(s) => V::String(s),
+                    Err(_) => panic!("Error reading file: {}", file_path),
+                }
+            }
+            Expr::ReadInput => {
+                println!("input prompt: ");
+                let mut buffer = String::new();
+                match io::stdin().read_line(&mut buffer) {
+                    Ok(_) => V::String(buffer),
+                    Err(_) => panic!("Error getting input"),
+                }
+
             }
         }
     }
 }
 
-fn resolve_get(expr: Box<Expr>, interpreter: &mut Interpreter) -> &mut V {
+fn resolve_get(expr: Box<Expr>, vars: &mut Variables) -> &mut V {
     println!("!resolve_get! {:?}", expr);
     match *expr.clone() {
-        Expr::Get(s, expr) => resolve_get(expr, interpreter)
-            .as_mut_obj()
-            .get_mut(&s)
-            .unwrap(),
-        Expr::Variable(s) => interpreter.variables.get_mut(&s).unwrap(),
+        Expr::Get(s, expr) => resolve_get(expr, vars).as_mut_obj().get_mut(&s).unwrap(),
+        Expr::Variable(s) => vars.get_mut(&s),
         _ => panic!("must be Get"),
     }
 }
@@ -233,14 +308,23 @@ pub enum V {
     Bool(bool),
     Obj(HashMap<String, V>),
     Func(Vec<String>, Vec<Statement>),
-    Nil,
+    Null,
+    List(Vec<V>),
 }
 
 impl V {
+    fn as_mut_list(&mut self) -> &mut Vec<V> {
+        match self {
+            V::List(l) => l,
+            V::Obj(_) | V::Null | V::String(_) | V::Bool(_) | V::Number(_) | V::Func(..) => {
+                panic!("not a object.")
+            }
+        }
+    }
     fn as_mut_obj(&mut self) -> &mut HashMap<String, V> {
         match self {
             V::Obj(o) => o,
-            V::Nil | V::String(_) | V::Bool(_) | V::Number(_) | V::Func(..) => {
+            V::List(_) | V::Null | V::String(_) | V::Bool(_) | V::Number(_) | V::Func(..) => {
                 panic!("not a object.")
             }
         }
@@ -248,7 +332,7 @@ impl V {
     fn as_obj(self) -> HashMap<String, V> {
         match self {
             V::Obj(o) => o,
-            V::Nil | V::String(_) | V::Bool(_) | V::Number(_) | V::Func(..) => {
+            V::List(_) | V::Null | V::String(_) | V::Bool(_) | V::Number(_) | V::Func(..) => {
                 panic!("not a object.")
             }
         }
@@ -256,20 +340,26 @@ impl V {
     fn as_num(self) -> f64 {
         match self {
             V::Number(n) => n,
-            V::Nil | V::String(_) | V::Bool(_) | V::Obj(_) | V::Func(..) => panic!("not a number."),
+            V::List(_) | V::Null | V::String(_) | V::Bool(_) | V::Obj(_) | V::Func(..) => {
+                panic!("not a number.")
+            }
         }
     }
     fn as_bool(self) -> bool {
         match self {
             V::Bool(b) => b,
-            V::Nil | V::String(_) | V::Number(_) | V::Obj(_) | V::Func(..) => panic!("not a bool."),
+            V::List(_) | V::Null | V::String(_) | V::Number(_) | V::Obj(_) | V::Func(..) => {
+                panic!("not a bool.")
+            }
         }
     }
 
     fn as_string(self) -> String {
         match self {
             V::String(s) => s,
-            V::Nil | V::Bool(_) | V::Number(_) | V::Obj(_) | V::Func(..) => panic!("not a string."),
+            V::List(_) | V::Null | V::Bool(_) | V::Number(_) | V::Obj(_) | V::Func(..) => {
+                panic!("not a string.")
+            }
         }
     }
 }

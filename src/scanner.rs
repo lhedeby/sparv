@@ -3,6 +3,8 @@ pub enum TokenKind {
     // Single-character tokens.
     LeftParen,
     RightParen,
+    LeftBracket,
+    RightBracket,
     LeftBrace,
     RightBrace,
     Comma,
@@ -38,7 +40,7 @@ pub enum TokenKind {
     For,
     Fun,
     If,
-    Nil,
+    Null,
     Or,
     Print,
     Return,
@@ -49,6 +51,8 @@ pub enum TokenKind {
     Bool,
     While,
     Error,
+    ReadFile,
+    ReadInput,
     Eof,
 }
 
@@ -59,6 +63,11 @@ pub struct Scanner {
     column: usize,
     source: String,
 }
+
+enum LexingError {
+}
+
+type Result<T> = std::result::Result<T, LexingError>;
 
 impl Scanner {
     pub fn get_tokens(source: String) -> Vec<Token> {
@@ -99,6 +108,8 @@ impl Scanner {
         match c {
             '(' => return self.make_token(TokenKind::LeftParen),
             ')' => return self.make_token(TokenKind::RightParen),
+            '[' => return self.make_token(TokenKind::LeftBracket),
+            ']' => return self.make_token(TokenKind::RightBracket),
             '{' => return self.make_token(TokenKind::LeftBrace),
             '}' => return self.make_token(TokenKind::RightBrace),
             ';' => return self.make_token(TokenKind::Semicolon),
@@ -152,7 +163,7 @@ impl Scanner {
     fn identifier(&mut self) -> Token {
         while self
             .peek()
-            .is_some_and(|c| c.is_ascii_alphabetic() || c.is_digit(10))
+            .is_some_and(|c| c.is_ascii_alphabetic() || c.is_digit(10) || c == '_')
         {
             self.advance();
         }
@@ -168,7 +179,7 @@ impl Scanner {
             ("class".to_string(), TokenKind::Class),
             ("else".to_string(), TokenKind::Else),
             ("if".to_string(), TokenKind::If),
-            ("nil".to_string(), TokenKind::Nil),
+            ("null".to_string(), TokenKind::Null),
             ("or".to_string(), TokenKind::Or),
             ("print".to_string(), TokenKind::Print),
             ("return".to_string(), TokenKind::Return),
@@ -181,6 +192,9 @@ impl Scanner {
             ("fun".to_string(), TokenKind::Fun),
             ("in".to_string(), TokenKind::In),
             ("new".to_string(), TokenKind::New),
+            ("read_file".to_string(), TokenKind::ReadFile),
+            ("read_input".to_string(), TokenKind::ReadInput),
+
         ]
     }
 

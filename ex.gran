@@ -1,7 +1,11 @@
-fun test(a, b) {
-    print "hello!" + a + b;
+fun test() {
+    print "hello";
+    return;
 }
 
-test(123, 456);
-print a;
+s = test();
+print s;
 
+v = read_input;
+
+print "you wrote: " + v;

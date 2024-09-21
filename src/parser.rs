@@ -13,6 +13,7 @@ type Result<T> = std::result::Result<T, ParserError>;
 impl Parser {
     pub fn parse(tokens: Vec<Token>) -> Result<Vec<Declaration>> {
         println!("Started parsing...");
+        println!("tokens: {:?}", tokens);
         let mut parser = Parser { p: 0, tokens };
         let mut decls: Vec<Declaration> = vec![];
         while parser.tokens[parser.p].kind != TokenKind::Eof {
@@ -57,9 +58,9 @@ impl Parser {
                     let param_identifier = self.tokens[self.p].value.to_string();
                     params.push(param_identifier);
                     self.p += 1;
-                },
+                }
                 TokenKind::RightParen => break,
-                _ => panic!("Expected Identifier, Comma or Right paren")
+                _ => panic!("Expected Identifier, Comma or Right paren"),
             }
         }
         // while self.get_kind() != TokenKind::RightParen {
@@ -159,9 +160,9 @@ impl Parser {
     fn return_stmt(&mut self) -> Result<Statement> {
         self.p += 1;
         let expr = if self.tokens[self.p].kind != TokenKind::Semicolon {
-            Some(self.parse_expr(0)?)
+            self.parse_expr(0)?
         } else {
-            None
+            Expr::Null
         };
         self.consume(TokenKind::Semicolon);
         Ok(Statement::Return(expr))
@@ -202,6 +203,18 @@ impl Parser {
                 let right = self.parse_expr(prefix_precedence(&token_kind))?;
                 Ok(Expr::Prefix(token_kind.clone(), Box::new(right.clone())))
             }
+            TokenKind::LeftBracket => {
+                let mut items = vec![];
+                loop {
+                    match self.get_kind() {
+                        TokenKind::Comma => self.p += 1,
+                        TokenKind::RightBracket => break,
+                        _ => items.push(self.parse_expr(0)?),
+                    }
+                }
+                self.consume(TokenKind::RightBracket);
+                Ok(Expr::List(items))
+            }
             TokenKind::Identifier => {
                 let identifier = self.tokens[self.p - 1].value.clone();
                 println!("kind: {:?}", self.get_kind());
@@ -216,11 +229,8 @@ impl Parser {
                         }
                         TokenKind::LeftParen => {
                             self.p += 1;
-                            // parse params
-
-                            // let i = self.tokens[self.p].value.clone();
                             let mut params = vec![];
-                            
+
                             loop {
                                 match self.get_kind() {
                                     TokenKind::Comma => self.p += 1,
@@ -232,25 +242,21 @@ impl Parser {
                             self.consume(TokenKind::RightParen);
                             expr = Expr::Call(params, Box::new(expr))
                         }
+                        TokenKind::LeftBracket => {
+                            self.p += 1;
+                            expr = Expr::Index(Box::new(expr), Box::new(self.parse_expr(0)?));
+                            self.consume(TokenKind::RightBracket);
+                        }
                         _ => break,
                     }
                 }
-                // while self.get_kind() == TokenKind::Dot {
-                //     self.p += 1;
-                //     let i = self.tokens[self.p].value.clone();
-                //     self.consume(TokenKind::Identifier);
-                //     println!("next kind: {:?}", self.get_kind());
-                //     expr = match self.get_kind() {
-                //         // TokenKind::Equal => Expr::Set(i, Box::new(expr)),
-                //         _ => Expr::Get(i, Box::new(expr)),
-                //     }
-                // }
                 Ok(expr)
             }
             TokenKind::Number => Ok(Expr::Number(self.tokens[self.p - 1].value.parse().unwrap())),
             TokenKind::String => Ok(Expr::String(self.tokens[self.p - 1].value.clone())),
             TokenKind::True => Ok(Expr::Bool(true)),
             TokenKind::False => Ok(Expr::Bool(false)),
+            TokenKind::Null => Ok(Expr::Null),
             TokenKind::LeftParen => {
                 let expr = self.parse_expr(0);
                 self.consume(TokenKind::RightParen);
@@ -266,6 +272,12 @@ impl Parser {
                 self.consume(TokenKind::RightBrace);
                 Ok(Expr::Object(res))
             }
+
+            /*
+                        BUILT INS
+            */
+            TokenKind::ReadFile => Ok(Expr::ReadFile(Box::new(self.parse_expr(0)?))),
+            TokenKind::ReadInput => Ok(Expr::ReadInput),
             _ => panic!("token is: {:?}", token_kind),
         }
     }
@@ -283,8 +295,9 @@ impl Parser {
                 Expr::Get(s, g_expr) => {
                     Ok(Expr::Set(s.to_string(), g_expr.clone(), Box::new(right)))
                 }
+                Expr::Index(e1, e2) => Ok(Expr::SetList(e1.clone(), e2.clone(), Box::new(right))),
                 _ => {
-                    panic!("Must be variable or get?")
+                    panic!("Must be variable or get? {:?}", expr)
                 }
             },
             _ => Ok(Expr::Operator(
@@ -354,7 +367,7 @@ pub enum Statement {
     For,
     If(Expr, Vec<Statement>, Vec<Statement>),
     Print(Expr),
-    Return(Option<Expr>),
+    Return(Expr),
     While(Expr, Vec<Statement>),
     Assignment(String, Vec<String>, Expr),
 }
@@ -366,9 +379,15 @@ pub enum Expr {
     Number(f64),
     String(String),
     Bool(bool),
+    Null,
     Get(String, Box<Expr>),
     Set(String, Box<Expr>, Box<Expr>),
     Call(Vec<Expr>, Box<Expr>),
     Variable(String),
     Object(Vec<Expr>),
+    List(Vec<Expr>),
+    Index(Box<Expr>, Box<Expr>),
+    SetList(Box<Expr>, Box<Expr>, Box<Expr>),
+    ReadFile(Box<Expr>),
+    ReadInput,
 }
