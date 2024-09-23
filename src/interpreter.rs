@@ -101,6 +101,7 @@ impl Statement {
                 vars.end_scope();
             },
             Statement::If(expr, if_stmts, else_stmts) => {
+                vars.begin_scope();
                 if expr.interpret(vars)?.as_bool() {
                     for stmt in if_stmts {
                         stmt.interpret(vars)?
@@ -110,6 +111,7 @@ impl Statement {
                         stmt.interpret(vars)?
                     }
                 }
+                vars.end_scope();
             }
             Statement::Print(expr) => {
                 let value = expr.interpret(vars)?;
@@ -129,11 +131,13 @@ impl Statement {
                 vars.return_value = Some(v);
             }
             Statement::While(expr, stmts) => {
+                vars.begin_scope();
                 while expr.interpret(vars)?.as_bool() {
                     for stmt in stmts {
                         stmt.interpret(vars)?;
                     }
                 }
+                vars.end_scope();
             }
             Statement::Assignment(..) => todo!("maybe remove"),
         }
