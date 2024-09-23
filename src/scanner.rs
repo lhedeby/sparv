@@ -1,60 +1,4 @@
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum TokenKind {
-    // Single-character tokens.
-    LeftParen,
-    RightParen,
-    LeftBracket,
-    RightBracket,
-    LeftBrace,
-    RightBrace,
-    Comma,
-    Dot,
-    Minus,
-    Plus,
-    Semicolon,
-    Slash,
-    Star,
-    Colon,
-    Percent,
-    // One or two character tokens.
-    Bang,
-    BangEqual,
-    Equal,
-    EqualEqual,
-    Greater,
-    GreaterEqual,
-    Less,
-    LessEqual,
-    // Literals.
-    Identifier,
-    String,
-    Number,
-    // Keywords.
-    New,
-    Let,
-    Mut,
-    And,
-    Class,
-    Else,
-    False,
-    For,
-    Fun,
-    If,
-    Null,
-    Or,
-    Print,
-    Return,
-    True,
-    In,
-    Int,
-    Str,
-    Bool,
-    While,
-    Error,
-    ReadFile,
-    ReadInput,
-    Eof,
-}
+use crate::token::{Token, TokenKind};
 
 pub struct Scanner {
     start: usize,
@@ -65,7 +9,7 @@ pub struct Scanner {
 }
 
 #[derive(Debug)]
-struct LexingError {
+pub struct LexingError {
     line: usize,
     column: usize,
 }
@@ -73,7 +17,7 @@ struct LexingError {
 type Result<T> = std::result::Result<T, LexingError>;
 
 impl Scanner {
-    pub fn get_tokens(source: String) -> Vec<Token> {
+    pub fn get_tokens(source: String) -> Result<Vec<Token>> {
         let mut scanner = Scanner {
             start: 0,
             current: 0,
@@ -83,10 +27,7 @@ impl Scanner {
         };
         let mut res = vec![];
         loop {
-            let token = match scanner.next_token() {
-                Ok(token) => token,
-                Err(e) => panic!("Error lexing at line {}:{}", e.line, e.column),
-            };
+            let token = scanner.next_token()?;
             let kind = token.kind;
             res.push(token);
             match kind {
@@ -94,7 +35,7 @@ impl Scanner {
                 _ => {}
             }
         }
-        res
+        Ok(res)
     }
 
     fn next_token(&mut self) -> Result<Token> {
@@ -335,7 +276,7 @@ impl Scanner {
     // TODO: remove?
     fn error_token(&self, message: &str) -> Token {
         Token {
-            kind: TokenKind::Error,
+            kind: TokenKind::_Error,
             line: self.line,
             column: self.column,
             value: message.to_string(),
@@ -347,18 +288,38 @@ impl Scanner {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct Token {
-    pub kind: TokenKind,
-    pub line: usize,
-    pub column: usize,
-    pub value: String,
-}
-
 #[cfg(test)]
 mod tests {
+    use std::iter::zip;
+
     use super::Scanner;
     use crate::scanner::TokenKind;
+
+    #[test]
+    fn let_stmt() {
+        test_kinds(
+            "let i=0;",
+            vec![
+                TokenKind::Let,
+                TokenKind::Identifier,
+                TokenKind::Equal,
+                TokenKind::Number,
+                TokenKind::Semicolon,
+            ],
+        )
+    }
+
+    #[test]
+    fn print_stmt() {
+        test_kinds("print \"hello\"", vec![TokenKind::Print, TokenKind::String])
+    }
+
+    fn test_kinds(source: &str, expected: Vec<TokenKind>) {
+        let tokens = Scanner::get_tokens(source.to_string()).unwrap();
+        for (t, e) in zip(tokens, expected) {
+            assert_eq!(t.kind, e)
+        }
+    }
 
     #[test]
     fn kinds() {
@@ -367,7 +328,7 @@ mod tests {
             str hello = "a string";
             print "world" + "!";
         "#;
-        let tokens = Scanner::get_tokens(source.to_string());
+        let tokens = Scanner::get_tokens(source.to_string()).unwrap();
         let temp = vec![
             TokenKind::Int,
             TokenKind::Identifier,

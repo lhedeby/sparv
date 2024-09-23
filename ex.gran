@@ -1,16 +1,10 @@
-
-fun test() {
-    print "hello";
-    return;
+print "hello";
+fun fib(n) {
+    if n == 0 or n == 1 {
+        return 1;
+    }
+    return fib(n - 1) + fib(n - 2);
 }
 
-
-
-s = test();
-print s;
-
-v = read_input;
-
-
-print "you wrote: " + v;
+print fib(20);
 

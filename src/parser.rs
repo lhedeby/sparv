@@ -1,4 +1,6 @@
-use crate::scanner::{Token, TokenKind};
+use std::fmt::Display;
+
+use crate::token::{Token, TokenKind};
 
 pub struct Parser {
     p: usize,
@@ -6,28 +8,39 @@ pub struct Parser {
 }
 
 #[derive(Debug)]
-pub enum ParserError {}
+pub enum ParserError {
+    UnexpectedToken(usize, usize, TokenKind, Option<TokenKind>),
+    Assignment(usize),
+}
+
+impl ParserError {
+    fn unexpected_token(token: &Token, expected: Option<TokenKind>) -> ParserError {
+        ParserError::UnexpectedToken(token.line, token.column, token.kind, expected)
+    }
+}
 
 type Result<T> = std::result::Result<T, ParserError>;
 
 impl Parser {
     pub fn parse(tokens: Vec<Token>) -> Result<Vec<Declaration>> {
-        println!("Started parsing...");
-        println!("tokens: {:?}", tokens);
         let mut parser = Parser { p: 0, tokens };
         let mut decls: Vec<Declaration> = vec![];
         while parser.tokens[parser.p].kind != TokenKind::Eof {
             let decl = parser.parse_decl()?;
             decls.push(decl);
         }
-        println!("Done parsing...");
+        // hoist functions
+        decls.sort_by(|a, _| match a {
+            Declaration::Function(_, _, _) => std::cmp::Ordering::Less,
+            Declaration::Statement(_) => std::cmp::Ordering::Greater,
+        });
         println!("=== DECLARATIONS ===");
         for d in &decls {
             println!("{:?}", d);
         }
         println!("\n");
 
-        Ok(decls)
+       Ok(decls)
     }
 
     /*
@@ -45,9 +58,9 @@ impl Parser {
 
     fn fun_decl(&mut self) -> Result<Declaration> {
         self.p += 1;
-        self.consume(TokenKind::Identifier);
+        self.consume(TokenKind::Identifier)?;
         let fun_identifier = self.tokens[self.p - 1].value.to_string();
-        self.consume(TokenKind::LeftParen);
+        self.consume(TokenKind::LeftParen)?;
         let mut params: Vec<String> = vec![];
         let mut stmts: Vec<Statement> = vec![];
         // params
@@ -60,7 +73,7 @@ impl Parser {
                     self.p += 1;
                 }
                 TokenKind::RightParen => break,
-                _ => panic!("Expected Identifier, Comma or Right paren"),
+                _ => return Err(ParserError::unexpected_token(self.get_token(), None)),
             }
         }
         // while self.get_kind() != TokenKind::RightParen {
@@ -69,12 +82,12 @@ impl Parser {
         //     params.push(param_identifier);
         //     self.p += 2;
         // }
-        self.consume(TokenKind::RightParen);
-        self.consume(TokenKind::LeftBrace);
+        self.consume(TokenKind::RightParen)?;
+        self.consume(TokenKind::LeftBrace)?;
         while self.get_kind() != TokenKind::RightBrace {
             stmts.push(self.parse_stmt()?);
         }
-        self.consume(TokenKind::RightBrace);
+        self.consume(TokenKind::RightBrace)?;
 
         Ok(Declaration::Function(fun_identifier, params, stmts))
     }
@@ -94,18 +107,18 @@ impl Parser {
             TokenKind::Let => self.let_stmt(),
             TokenKind::Identifier => self.identifier_stmt(),
             TokenKind::For => self.for_stmt(),
-            _ => panic!("Unexpected token '{:?}'.", self.get_kind()),
+            _ => Err(ParserError::unexpected_token(self.get_token(), None)),
         }
     }
 
     fn let_stmt(&mut self) -> Result<Statement> {
         self.p += 1;
-        self.consume(TokenKind::Identifier);
+        self.consume(TokenKind::Identifier)?;
         let identifier = self.tokens[self.p - 1].value.to_string();
-        self.consume(TokenKind::Equal);
+        self.consume(TokenKind::Equal)?;
 
         let expr = self.parse_expr(0)?;
-        self.consume(TokenKind::Semicolon);
+        self.consume(TokenKind::Semicolon)?;
         Ok(Statement::Let(identifier, expr))
     }
 
@@ -113,13 +126,13 @@ impl Parser {
         self.p += 1;
         let mut stmts: Vec<Statement> = vec![];
         let expr = self.parse_expr(0)?;
-        self.consume(TokenKind::LeftBrace);
+        self.consume(TokenKind::LeftBrace)?;
 
         while self.get_kind() != TokenKind::RightBrace {
             let stmt = self.parse_stmt();
             stmts.push(stmt?);
         }
-        self.consume(TokenKind::RightBrace);
+        self.consume(TokenKind::RightBrace)?;
         Ok(Statement::While(expr, stmts))
     }
 
@@ -127,13 +140,13 @@ impl Parser {
         self.p += 1;
         let mut if_stmts: Vec<Statement> = vec![];
         let expr = self.parse_expr(0)?;
-        self.consume(TokenKind::LeftBrace);
+        self.consume(TokenKind::LeftBrace)?;
 
         while self.get_kind() != TokenKind::RightBrace {
             let stmt = self.parse_stmt();
             if_stmts.push(stmt?);
         }
-        self.consume(TokenKind::RightBrace);
+        self.consume(TokenKind::RightBrace)?;
 
         if self.get_kind() != TokenKind::Else {
             return Ok(Statement::If(expr, if_stmts, vec![]));
@@ -141,20 +154,20 @@ impl Parser {
         self.p += 1;
 
         let mut else_stmts: Vec<Statement> = vec![];
-        self.consume(TokenKind::LeftBrace);
+        self.consume(TokenKind::LeftBrace)?;
 
         while self.get_kind() != TokenKind::RightBrace {
             let stmt = self.parse_stmt();
             else_stmts.push(stmt?);
         }
-        self.consume(TokenKind::RightBrace);
+        self.consume(TokenKind::RightBrace)?;
 
         Ok(Statement::If(expr, if_stmts, else_stmts))
     }
     fn print_stmt(&mut self) -> Result<Statement> {
         self.p += 1;
         let expr = self.parse_expr(0)?;
-        self.consume(TokenKind::Semicolon);
+        self.consume(TokenKind::Semicolon)?;
         Ok(Statement::Print(expr))
     }
     fn return_stmt(&mut self) -> Result<Statement> {
@@ -164,12 +177,12 @@ impl Parser {
         } else {
             Expr::Null
         };
-        self.consume(TokenKind::Semicolon);
+        self.consume(TokenKind::Semicolon)?;
         Ok(Statement::Return(expr))
     }
     fn identifier_stmt(&mut self) -> Result<Statement> {
         let res = Ok(Statement::Expression(self.parse_expr(0)?));
-        self.consume(TokenKind::Semicolon);
+        self.consume(TokenKind::Semicolon)?;
         res
     }
     fn for_stmt(&mut self) -> Result<Statement> {
@@ -212,7 +225,7 @@ impl Parser {
                         _ => items.push(self.parse_expr(0)?),
                     }
                 }
-                self.consume(TokenKind::RightBracket);
+                self.consume(TokenKind::RightBracket)?;
                 Ok(Expr::List(items))
             }
             TokenKind::Identifier => {
@@ -224,7 +237,7 @@ impl Parser {
                         TokenKind::Dot => {
                             self.p += 1;
                             let i = self.tokens[self.p].value.clone();
-                            self.consume(TokenKind::Identifier);
+                            self.consume(TokenKind::Identifier)?;
                             expr = Expr::Get(i, Box::new(expr))
                         }
                         TokenKind::LeftParen => {
@@ -239,13 +252,13 @@ impl Parser {
                                 }
                             }
 
-                            self.consume(TokenKind::RightParen);
+                            self.consume(TokenKind::RightParen)?;
                             expr = Expr::Call(params, Box::new(expr))
                         }
                         TokenKind::LeftBracket => {
                             self.p += 1;
                             expr = Expr::Index(Box::new(expr), Box::new(self.parse_expr(0)?));
-                            self.consume(TokenKind::RightBracket);
+                            self.consume(TokenKind::RightBracket)?;
                         }
                         _ => break,
                     }
@@ -259,7 +272,7 @@ impl Parser {
             TokenKind::Null => Ok(Expr::Null),
             TokenKind::LeftParen => {
                 let expr = self.parse_expr(0);
-                self.consume(TokenKind::RightParen);
+                self.consume(TokenKind::RightParen)?;
                 expr
             }
             TokenKind::LeftBrace => {
@@ -267,9 +280,9 @@ impl Parser {
                 while self.get_kind() != TokenKind::RightBrace {
                     let expr = self.parse_expr(0);
                     res.push(expr?);
-                    self.consume(TokenKind::Comma);
+                    self.consume(TokenKind::Comma)?;
                 }
-                self.consume(TokenKind::RightBrace);
+                self.consume(TokenKind::RightBrace)?;
                 Ok(Expr::Object(res))
             }
 
@@ -278,7 +291,7 @@ impl Parser {
             */
             TokenKind::ReadFile => Ok(Expr::ReadFile(Box::new(self.parse_expr(0)?))),
             TokenKind::ReadInput => Ok(Expr::ReadInput),
-            _ => panic!("token is: {:?}", token_kind),
+            _ => Err(ParserError::unexpected_token(self.get_token(), None)),
         }
     }
 
@@ -296,9 +309,7 @@ impl Parser {
                     Ok(Expr::Set(s.to_string(), g_expr.clone(), Box::new(right)))
                 }
                 Expr::Index(e1, e2) => Ok(Expr::SetList(e1.clone(), e2.clone(), Box::new(right))),
-                _ => {
-                    panic!("Must be variable or get? {:?}", expr)
-                }
+                _ => Err(ParserError::Assignment(self.get_token().line)),
             },
             _ => Ok(Expr::Operator(
                 Box::new(expr.clone()),
@@ -308,14 +319,19 @@ impl Parser {
         }
     }
 
-    fn consume(&mut self, expected_token: TokenKind) {
+    fn consume(&mut self, expected_token: TokenKind) -> Result<()> {
         if expected_token != self.tokens[self.p].kind {
-            panic!(
-                "Unexpected token. Expected '{:?}' but got '{:?}'",
-                expected_token, self.tokens[self.p].kind
-            );
+            return Err(ParserError::unexpected_token(
+                self.get_token(),
+                Some(expected_token),
+            ));
         }
         self.p += 1;
+        Ok(())
+    }
+
+    fn get_token(&mut self) -> &Token {
+        &self.tokens[self.p]
     }
 
     fn get_kind(&mut self) -> TokenKind {
@@ -391,3 +407,6 @@ pub enum Expr {
     ReadFile(Box<Expr>),
     ReadInput,
 }
+
+#[cfg(test)]
+mod tests {}
