@@ -159,13 +159,11 @@ impl Expr {
                     (V::Number(n1), TK::Slash, V::Number(n2)) => V::Number(n1 / n2),
                     (V::Number(n1), TK::Star, V::Number(n2)) => V::Number(n1 * n2),
                     // TODO
-                    (V::Number(f1), TK::Percent, V::Number(f2)) => {
-                        V::Number(f1 % f2)
-                    }
+                    (V::Number(f1), TK::Percent, V::Number(f2)) => V::Number(f1 % f2),
 
                     /*
-                    *   Concatenation
-                    */
+                     *   Concatenation
+                     */
                     (e1, TK::Plus, e2) => V::String(format!("{}{}", e1, e2)),
 
                     /*
@@ -282,6 +280,13 @@ impl Expr {
                     .get(index.interpret(vars)?.as_num() as usize)
                     .unwrap()
                     .clone(),
+                V::String(s) => V::String(
+                    s.chars()
+                        .nth(index.interpret(vars)?.as_num() as usize)
+                        .unwrap()
+                        .to_string(),
+                ),
+
                 _ => panic!("cant index non-list"),
             },
             Expr::SetList(list, index, new) => {
