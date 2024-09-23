@@ -164,18 +164,9 @@ impl Expr {
                     // }
 
                     /*
-                     *   Concatenation
-                     */
-                    (V::String(s1), TK::Plus, V::String(s2)) => V::String(String::from(s1 + &s2)),
-                    (V::String(s), TK::Plus, V::Bool(b)) => {
-                        V::String(String::from(s + &b.to_string()))
-                    }
-                    (V::String(s), TK::Plus, V::Number(n)) => {
-                        V::String(String::from(s + &n.to_string()))
-                    }
-                    (V::Number(n), TK::Plus, V::String(s)) => {
-                        V::String(String::from(n.to_string() + &s))
-                    }
+                    *   Concatenation
+                    */
+                    (e1, TK::Plus, e2) => V::String(format!("{}{}", e1, e2)),
 
                     /*
                      *   Compare

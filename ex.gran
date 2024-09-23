@@ -7,4 +7,4 @@
         return res;
     }
     let res = map_list([1,2,3], square);
-    print res;
+    print "list" + res;
