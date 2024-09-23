@@ -1,10 +1,6 @@
-print "hello";
-fun fib(n) {
-    if n == 0 or n == 1 {
-        return 1;
-    }
-    return fib(n - 1) + fib(n - 2);
+list = [1,2,3, "hello?", 9];
+
+for i in [1,2,3,"inline"] {
+    print "foo" + i;
 }
-
-print fib(20);
-
+print i;

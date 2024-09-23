@@ -1,4 +1,3 @@
-use std::fmt::Display;
 
 use crate::token::{Token, TokenKind};
 
@@ -129,8 +128,8 @@ impl Parser {
         self.consume(TokenKind::LeftBrace)?;
 
         while self.get_kind() != TokenKind::RightBrace {
-            let stmt = self.parse_stmt();
-            stmts.push(stmt?);
+            let stmt = self.parse_stmt()?;
+            stmts.push(stmt);
         }
         self.consume(TokenKind::RightBrace)?;
         Ok(Statement::While(expr, stmts))
@@ -143,8 +142,8 @@ impl Parser {
         self.consume(TokenKind::LeftBrace)?;
 
         while self.get_kind() != TokenKind::RightBrace {
-            let stmt = self.parse_stmt();
-            if_stmts.push(stmt?);
+            let stmt = self.parse_stmt()?;
+            if_stmts.push(stmt);
         }
         self.consume(TokenKind::RightBrace)?;
 
@@ -157,8 +156,8 @@ impl Parser {
         self.consume(TokenKind::LeftBrace)?;
 
         while self.get_kind() != TokenKind::RightBrace {
-            let stmt = self.parse_stmt();
-            else_stmts.push(stmt?);
+            let stmt = self.parse_stmt()?;
+            else_stmts.push(stmt);
         }
         self.consume(TokenKind::RightBrace)?;
 
@@ -186,7 +185,21 @@ impl Parser {
         res
     }
     fn for_stmt(&mut self) -> Result<Statement> {
-        todo!()
+        self.p += 1;
+        let mut stmts = vec![];
+        let i = self.tokens[self.p].value.to_string();
+        self.consume(TokenKind::Identifier)?;
+        self.consume(TokenKind::In)?;
+        let expr = self.parse_expr(0)?;
+        self.consume(TokenKind::LeftBrace)?;
+
+        while self.get_kind() != TokenKind::RightBrace {
+            let stmt = self.parse_stmt()?;
+            stmts.push(stmt);
+        }
+        self.consume(TokenKind::RightBrace)?;
+
+        Ok(Statement::For(i, expr, stmts))
     }
 
     /*
@@ -380,7 +393,7 @@ pub enum Declaration {
 pub enum Statement {
     Expression(Expr),
     Let(String, Expr),
-    For,
+    For(String, Expr, Vec<Statement>),
     If(Expr, Vec<Statement>, Vec<Statement>),
     Print(Expr),
     Return(Expr),

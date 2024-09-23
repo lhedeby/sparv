@@ -89,7 +89,17 @@ impl Statement {
                 let expr = expr.interpret(vars)?;
                 vars.add(name.to_string(), expr)?;
             }
-            Statement::For => todo!(),
+            Statement::For(i, expr, stmts) => {
+                vars.begin_scope();
+                let list = expr.interpret(vars)?.as_list();
+                for item in list {
+                    vars.add(i.to_string(), item)?;
+                    for stmt in stmts {
+                        stmt.interpret(vars)?;
+                    }
+                }
+                vars.end_scope();
+            },
             Statement::If(expr, if_stmts, else_stmts) => {
                 if expr.interpret(vars)?.as_bool() {
                     for stmt in if_stmts {
@@ -333,6 +343,16 @@ impl V {
             }
         }
     }
+
+    fn as_list(self) -> Vec<V> {
+        match self {
+            V::List(l) => l,
+            V::Obj(_) | V::Null | V::String(_) | V::Bool(_) | V::Number(_) | V::Func(..) => {
+                panic!("not a object.")
+            }
+        }
+    }
+
     fn as_mut_obj(&mut self) -> &mut HashMap<String, V> {
         match self {
             V::Obj(o) => o,
