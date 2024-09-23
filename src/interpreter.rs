@@ -159,9 +159,9 @@ impl Expr {
                     (V::Number(n1), TK::Slash, V::Number(n2)) => V::Number(n1 / n2),
                     (V::Number(n1), TK::Star, V::Number(n2)) => V::Number(n1 * n2),
                     // TODO
-                    // (Value::Number(f1), TokenKind::Percent, Value::Number(f2)) => {
-                    //     Value::Number(f1 % f2)
-                    // }
+                    (V::Number(f1), TK::Percent, V::Number(f2)) => {
+                        V::Number(f1 % f2)
+                    }
 
                     /*
                     *   Concatenation

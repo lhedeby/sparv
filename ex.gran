@@ -1,10 +1,8 @@
-    fun square(x) return x*x;
-    fun map_list(list, f) {
-        let res = list;
-        for l in 0:len list {
-            res[l] = f(res[l]);
-        }
-        return res;
+
+for i in 0:100 {
+    if i % 3 == 0 {
+        print "fizz";
+    } else {
+        print i;
     }
-    let res = map_list([1,2,3], square);
-    print "list" + res;
+}
