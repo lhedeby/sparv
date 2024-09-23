@@ -1,3 +1,6 @@
-let t = "helloworld";
+let t = "he1llo3wo5rld";
 
-print t[5];
+let res = [null, null];
+
+print len t;
+

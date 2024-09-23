@@ -311,7 +311,16 @@ impl Expr {
                     Err(_) => panic!("Error getting input"),
                 }
             }
-            Expr::Len(expr) => V::Number(expr.interpret(vars)?.as_list().len() as f64),
+            // Expr::Len(expr) => V::Number(expr.interpret(vars)?.as_list().len() as f64),
+            Expr::Len(expr) => V::Number(match expr.interpret(vars)? {
+                V::String(s) => s.len() as f64,
+                V::Number(_) => todo!(),
+                V::Bool(_) => todo!(),
+                V::Obj(_) => todo!(),
+                V::Func(_, _) => todo!(),
+                V::Null => todo!(),
+                V::List(v) => v.len() as f64,
+            }),
         };
         Ok(res)
     }
