@@ -1,4 +1,4 @@
-use std::{env, fs, io::stdout};
+use std::{env, fs};
 // use pub fn instead of impl
 use crate::{interpreter::Interpreter, parser::Parser, scanner::Scanner};
 

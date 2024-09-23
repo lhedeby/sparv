@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::io::{self};
 
 use crate::parser::{Declaration, Expr, Statement};
@@ -116,15 +117,7 @@ impl Statement {
             }
             Statement::Print(expr) => {
                 let value = expr.interpret(vars)?;
-                match value {
-                    V::String(s) => println!("{s}"),
-                    V::Number(n) => println!("{n}"),
-                    V::Bool(b) => println!("{b}"),
-                    V::Obj(o) => println!("{:?}", o),
-                    V::Func(..) => todo!("print function"),
-                    V::Null => println!("NULL"),
-                    V::List(l) => todo!("print list: {:?}", l),
-                }
+                println!("{}", value);
             }
             Statement::Return(expr) => {
                 // set return value in variables?
@@ -221,6 +214,12 @@ impl Expr {
                         vars.add(s, v)?;
                         V::Number(0.0)
                     }
+
+                    (V::Number(n1), TK::Colon, V::Number(n2)) => V::List(
+                        ((n1 as usize)..(n2 as usize))
+                            .map(|x| V::Number(x as f64))
+                            .collect(),
+                    ),
                     (a1, a2, a3) => panic!("what is this got: '{:?}', '{:?}', '{:?}'", a1, a2, a3),
                 }
             }
@@ -257,8 +256,6 @@ impl Expr {
                 V::Bool(true)
             }
             Expr::Call(params, expr) => {
-                println!("do IO get herer?");
-                println!("erxpr: {:?}", expr);
                 vars.begin_scope();
                 match expr.interpret(vars)? {
                     V::Func(param_names, stmts) => {
@@ -284,7 +281,6 @@ impl Expr {
                 }
                 vars.end_scope();
 
-                println!("do IO get herer2?");
                 V::Null
             }
             Expr::List(items) => {
@@ -305,7 +301,6 @@ impl Expr {
                 V::Null
             }
             Expr::ReadFile(expr) => {
-                println!("trying to read file: {:?}", expr);
                 let file_path = expr.interpret(vars)?.as_string();
                 match std::fs::read_to_string(file_path.clone()) {
                     Ok(s) => V::String(s),
@@ -327,7 +322,6 @@ impl Expr {
 }
 
 fn resolve_get(expr: Box<Expr>, vars: &mut Variables) -> Result<&mut V> {
-    println!("!resolve_get! {:?}", expr);
     match *expr.clone() {
         Expr::Get(s, expr) => Ok(resolve_get(expr, vars)?.as_mut_obj().get_mut(&s).unwrap()),
         Expr::Variable(s) => vars.get_mut(&s),
@@ -344,6 +338,25 @@ pub enum V {
     Func(Vec<String>, Vec<Statement>),
     Null,
     List(Vec<V>),
+}
+
+impl Display for V {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            V::String(s) => write!(f, "{}", s),
+            V::Number(n) => write!(f, "{}", n),
+            V::Bool(b) => write!(f, "{}", b),
+            V::Obj(o) => todo!(),
+            V::Func(params, stmts) => todo!(),
+            V::Null => write!(f, "null"),
+            V::List(items) => {
+                for item in items {
+                    write!(f, "{} ", item)?;
+                }
+                Ok(())
+            }
+        }
+    }
 }
 
 impl V {

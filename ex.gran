@@ -1,2 +1,10 @@
-i = [1,2,3, 3,3,3,3,3];
-print len i;
+    fun square(x) return x*x;
+    fun map_list(list, f) {
+        let res = list;
+        for l in 0:len list {
+            res[l] = f(res[l]);
+        }
+        return res;
+    }
+    let res = map_list([1,2,3], square);
+    print res;

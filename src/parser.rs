@@ -74,12 +74,6 @@ impl Parser {
                 _ => return Err(ParserError::unexpected_token(self.get_token(), None)),
             }
         }
-        // while self.get_kind() != TokenKind::RightParen {
-        //     println!("loop, kind: {:?}", self.get_kind());
-        //     let param_identifier = self.tokens[self.p].value.to_string();
-        //     params.push(param_identifier);
-        //     self.p += 2;
-        // }
         self.consume(TokenKind::RightParen)?;
         match self.get_kind() {
             TokenKind::LeftBrace => {
@@ -249,7 +243,6 @@ impl Parser {
             }
             TokenKind::Identifier => {
                 let identifier = self.tokens[self.p - 1].value.clone();
-                println!("kind: {:?}", self.get_kind());
                 let mut expr = Expr::Variable(identifier);
                 loop {
                     match self.get_kind() {
@@ -379,7 +372,7 @@ fn infix_precedence(kind: &TokenKind) -> usize {
         TokenKind::Greater | TokenKind::GreaterEqual | TokenKind::Less | TokenKind::LessEqual => 5,
         TokenKind::Plus | TokenKind::Minus => 6,
         TokenKind::Star | TokenKind::Slash => 7,
-        TokenKind::Dot => 9,
+        TokenKind::Dot | TokenKind::Colon => 9,
         _ => 0,
     }
 }
