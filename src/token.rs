@@ -61,5 +61,6 @@ pub enum TokenKind {
     _Error,
     ReadFile,
     ReadInput,
+    Len,
     Eof,
 }

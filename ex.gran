@@ -1,6 +1,2 @@
-list = [1,2,3, "hello?", 9];
-
-for i in [1,2,3,"inline"] {
-    print "foo" + i;
-}
-print i;
+i = [1,2,3, 3,3,3,3,3];
+print len i;

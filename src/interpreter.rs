@@ -8,6 +8,7 @@ use crate::token::TokenKind as TK;
 pub enum RuntimeError {
     MissingVariable,
     NoVariableEnvironment,
+    UnexpectedType,
 }
 
 type Result<T> = std::result::Result<T, RuntimeError>;
@@ -99,7 +100,7 @@ impl Statement {
                     }
                 }
                 vars.end_scope();
-            },
+            }
             Statement::If(expr, if_stmts, else_stmts) => {
                 vars.begin_scope();
                 if expr.interpret(vars)?.as_bool() {
@@ -122,7 +123,7 @@ impl Statement {
                     V::Obj(o) => println!("{:?}", o),
                     V::Func(..) => todo!("print function"),
                     V::Null => println!("NULL"),
-                    V::List(..) => todo!("print list"),
+                    V::List(l) => todo!("print list: {:?}", l),
                 }
             }
             Statement::Return(expr) => {
@@ -256,6 +257,8 @@ impl Expr {
                 V::Bool(true)
             }
             Expr::Call(params, expr) => {
+                println!("do IO get herer?");
+                println!("erxpr: {:?}", expr);
                 vars.begin_scope();
                 match expr.interpret(vars)? {
                     V::Func(param_names, stmts) => {
@@ -280,9 +283,13 @@ impl Expr {
                     _ => panic!("Expected function"),
                 }
                 vars.end_scope();
+
+                println!("do IO get herer2?");
                 V::Null
             }
-            Expr::List(items) => V::List(items.iter().map(|x| x.interpret(vars).unwrap()).collect()),
+            Expr::List(items) => {
+                V::List(items.iter().map(|x| x.interpret(vars).unwrap()).collect())
+            }
             Expr::Index(list, index) => match list.interpret(vars)? {
                 V::List(items) => items
                     .get(index.interpret(vars)?.as_num() as usize)
@@ -313,6 +320,7 @@ impl Expr {
                     Err(_) => panic!("Error getting input"),
                 }
             }
+            Expr::Len(expr) => V::Number(expr.interpret(vars)?.as_list().len() as f64),
         };
         Ok(res)
     }
@@ -343,7 +351,7 @@ impl V {
         match self {
             V::List(l) => l,
             V::Obj(_) | V::Null | V::String(_) | V::Bool(_) | V::Number(_) | V::Func(..) => {
-                panic!("not a object.")
+                panic!("not a list.")
             }
         }
     }
@@ -352,7 +360,7 @@ impl V {
         match self {
             V::List(l) => l,
             V::Obj(_) | V::Null | V::String(_) | V::Bool(_) | V::Number(_) | V::Func(..) => {
-                panic!("not a object.")
+                panic!("not a list.")
             }
         }
     }
@@ -361,7 +369,7 @@ impl V {
         match self {
             V::Obj(o) => o,
             V::List(_) | V::Null | V::String(_) | V::Bool(_) | V::Number(_) | V::Func(..) => {
-                panic!("not a object.")
+                panic!("not an object.")
             }
         }
     }
@@ -369,7 +377,7 @@ impl V {
         match self {
             V::Obj(o) => o,
             V::List(_) | V::Null | V::String(_) | V::Bool(_) | V::Number(_) | V::Func(..) => {
-                panic!("not a object.")
+                panic!("not an object.")
             }
         }
     }

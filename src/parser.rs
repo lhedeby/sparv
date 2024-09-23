@@ -1,4 +1,3 @@
-
 use crate::token::{Token, TokenKind};
 
 pub struct Parser {
@@ -39,7 +38,7 @@ impl Parser {
         }
         println!("\n");
 
-       Ok(decls)
+        Ok(decls)
     }
 
     /*
@@ -82,11 +81,18 @@ impl Parser {
         //     self.p += 2;
         // }
         self.consume(TokenKind::RightParen)?;
-        self.consume(TokenKind::LeftBrace)?;
-        while self.get_kind() != TokenKind::RightBrace {
-            stmts.push(self.parse_stmt()?);
+        match self.get_kind() {
+            TokenKind::LeftBrace => {
+                self.consume(TokenKind::LeftBrace)?;
+                while self.get_kind() != TokenKind::RightBrace {
+                    stmts.push(self.parse_stmt()?);
+                }
+                self.consume(TokenKind::RightBrace)?;
+            }
+            _ => {
+                stmts.push(self.parse_stmt()?);
+            }
         }
-        self.consume(TokenKind::RightBrace)?;
 
         Ok(Declaration::Function(fun_identifier, params, stmts))
     }
@@ -304,6 +310,7 @@ impl Parser {
             */
             TokenKind::ReadFile => Ok(Expr::ReadFile(Box::new(self.parse_expr(0)?))),
             TokenKind::ReadInput => Ok(Expr::ReadInput),
+            TokenKind::Len => Ok(Expr::Len(Box::new(self.parse_expr(0)?))),
             _ => Err(ParserError::unexpected_token(self.get_token(), None)),
         }
     }
@@ -419,6 +426,7 @@ pub enum Expr {
     SetList(Box<Expr>, Box<Expr>, Box<Expr>),
     ReadFile(Box<Expr>),
     ReadInput,
+    Len(Box<Expr>),
 }
 
 #[cfg(test)]
