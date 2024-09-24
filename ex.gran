@@ -1,6 +1,20 @@
-a = fun(b, c) {
-    print "hello from fun";
-    print b + c;
-};
+fun get_list() {
+    return [1,2,3];
+}
 
-a(1,2);
+fun square_list(list) {
+    for i in 0:len list {
+        list[i] = list[i] * list[i];
+    }
+    return list;
+}
+
+fun print_list(list) {
+    print list;
+}
+
+
+
+
+i = [1,2,3]->square_list->print_list;
+

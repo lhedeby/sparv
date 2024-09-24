@@ -62,7 +62,14 @@ impl Scanner {
             ';' => return self.make_token(TokenKind::Semicolon),
             ',' => return self.make_token(TokenKind::Comma),
             '.' => return self.make_token(TokenKind::Dot),
-            '-' => return self.make_token(TokenKind::Minus),
+            '-' => {
+                let token = if self.check_next('>') {
+                    TokenKind::Arrow
+                } else {
+                    TokenKind::Minus
+                };
+                return self.make_token(token);
+            }
             '+' => return self.make_token(TokenKind::Plus),
             '/' => return self.make_token(TokenKind::Slash),
             '*' => return self.make_token(TokenKind::Star),

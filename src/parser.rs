@@ -406,6 +406,7 @@ fn infix_precedence(kind: &TokenKind) -> usize {
         TokenKind::Plus | TokenKind::Minus => 6,
         TokenKind::Star | TokenKind::Slash | TokenKind::Percent => 7,
         TokenKind::Dot | TokenKind::Colon => 9,
+        TokenKind::Arrow => 10,
         _ => 0,
     }
 }
