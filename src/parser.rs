@@ -106,8 +106,15 @@ impl Parser {
             TokenKind::Let => self.let_stmt(),
             TokenKind::Identifier => self.identifier_stmt(),
             TokenKind::For => self.for_stmt(),
-            _ => Err(ParserError::unexpected_token(self.get_token(), None)),
+            // TODO: Think about if this is actually correct
+            _ => self.expression_stmt()
         }
+    }
+
+    fn expression_stmt(&mut self) -> Result<Statement> {
+        let expr = self.parse_expr(0)?;
+        self.consume(TokenKind::Semicolon)?;
+        Ok(Statement::Expression(expr))
     }
 
     fn let_stmt(&mut self) -> Result<Statement> {

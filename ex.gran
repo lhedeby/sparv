@@ -11,10 +11,16 @@ fun square_list(list) {
 
 fun print_list(list) {
     print list;
+    return list;
 }
 
 
 
 
-i = [1,2,3]->square_list->print_list;
+[1,2,3]->
+    square_list->
+    print_list->
+    square_list->
+    print_list;
+
 
