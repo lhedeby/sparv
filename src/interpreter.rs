@@ -321,6 +321,7 @@ impl Expr {
                 V::Null => todo!(),
                 V::List(v) => v.len() as f64,
             }),
+            Expr::Function(params, stmts) => V::Func(params.to_vec(), stmts.to_vec()),
         };
         Ok(res)
     }

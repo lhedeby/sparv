@@ -282,6 +282,39 @@ impl Parser {
             TokenKind::True => Ok(Expr::Bool(true)),
             TokenKind::False => Ok(Expr::Bool(false)),
             TokenKind::Null => Ok(Expr::Null),
+            TokenKind::Fun => {
+                self.consume(TokenKind::LeftParen)?;
+                let mut params: Vec<String> = vec![];
+                let mut stmts: Vec<Statement> = vec![];
+                // params
+                loop {
+                    match self.get_kind() {
+                        TokenKind::Comma => self.p += 1,
+                        TokenKind::Identifier => {
+                            let param_identifier = self.tokens[self.p].value.to_string();
+                            params.push(param_identifier);
+                            self.p += 1;
+                        }
+                        TokenKind::RightParen => break,
+                        _ => return Err(ParserError::unexpected_token(self.get_token(), None)),
+                    }
+                }
+                self.consume(TokenKind::RightParen)?;
+                match self.get_kind() {
+                    TokenKind::LeftBrace => {
+                        self.consume(TokenKind::LeftBrace)?;
+                        while self.get_kind() != TokenKind::RightBrace {
+                            stmts.push(self.parse_stmt()?);
+                        }
+                        self.consume(TokenKind::RightBrace)?;
+                    }
+                    _ => {
+                        stmts.push(self.parse_stmt()?);
+                    }
+                }
+
+                Ok(Expr::Function(params, stmts))
+            }
             TokenKind::LeftParen => {
                 let expr = self.parse_expr(0);
                 self.consume(TokenKind::RightParen)?;
@@ -409,6 +442,7 @@ pub enum Expr {
     String(String),
     Bool(bool),
     Null,
+    Function(Vec<String>, Vec<Statement>),
     Get(String, Box<Expr>),
     Set(String, Box<Expr>, Box<Expr>),
     Call(Vec<Expr>, Box<Expr>),

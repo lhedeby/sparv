@@ -1,6 +1,6 @@
-let t = "he1llo3wo5rld";
+a = fun(b, c) {
+    print "hello from fun";
+    print b + c;
+};
 
-let res = [null, null];
-
-print len t;
-
+a(1,2);
