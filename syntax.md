@@ -62,7 +62,7 @@
     fun map_list(list, f) {
         let res = list;
         // TODO: implement built-in 'len'
-        for l in [0, 1, 2] {
+        for l in 0:len list {
             res[l] = f(res[l]);
         }
         return res;
@@ -70,8 +70,18 @@
     let res = map_list([1,2,3], square);
 ``
 
+## arrow chaining
+``
+    [1,2,3]->
+        square_list->
+        print_list->
+        square_list->
+        print_list->
+        add->
+        print_list;
+``
+
 ## TODO SYNTAX
 ``
     let r = 0:5;
-    // expands to [0, 1, 2, 3, 4]
 ``

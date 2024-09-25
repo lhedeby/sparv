@@ -63,5 +63,6 @@ pub enum TokenKind {
     ReadFile,
     ReadInput,
     Len,
+    Import,
     Eof,
 }

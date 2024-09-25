@@ -77,6 +77,7 @@ impl Declaration {
                 vars.add(name.to_string(), V::Func(params.to_vec(), stmts.to_vec()))
             }
             Declaration::Statement(stmt) => stmt.interpret(vars),
+            Declaration::Import(_) => unreachable!("Imports are handled during parsing"),
         }
     }
 }
@@ -210,20 +211,22 @@ impl Expr {
                             .collect(),
                     ),
                     (e1, TK::Arrow, V::Func(param_names, stmts)) => {
-
                         // allow for multiple return values?
                         if param_names.len() != 1 {
                             panic!("Can only have 1 parameter when chaining functions with '->'");
                         }
+                        vars.begin_scope();
                         vars.add(param_names[0].to_string(), e1)?;
                         for stmt in stmts {
                             stmt.interpret(vars)?;
                             if vars.return_value.is_some() {
                                 let val = vars.return_value.as_mut().unwrap().clone();
                                 vars.return_value = None;
+                                vars.end_scope();
                                 return Ok(val);
                             }
                         }
+                        vars.end_scope();
                         V::Null
                     }
                     (a1, a2, a3) => panic!("what is this got: '{:?}', '{:?}', '{:?}'", a1, a2, a3),
@@ -331,7 +334,7 @@ impl Expr {
             // Expr::Len(expr) => V::Number(expr.interpret(vars)?.as_list().len() as f64),
             Expr::Len(expr) => V::Number(match expr.interpret(vars)? {
                 V::String(s) => s.len() as f64,
-                V::Number(_) => todo!(),
+                V::Number(_) => todo!("expr: {:?}", expr),
                 V::Bool(_) => todo!(),
                 V::Obj(_) => todo!(),
                 V::Func(_, _) => todo!(),

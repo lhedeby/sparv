@@ -1,3 +1,4 @@
+import "test.gran";
 fun get_list() {
     return [1,2,3];
 }
@@ -14,13 +15,21 @@ fun print_list(list) {
     return list;
 }
 
+fun add(list) {
+    for i in 0:len list {
+        list[i] = list[i]+1;
+    }
+    return list;
+}
 
 
 
-[1,2,3]->
+// why does it not work with 0:4?
+
+
+0:5->
     square_list->
-    print_list->
-    square_list->
+    add->
     print_list;
 
 

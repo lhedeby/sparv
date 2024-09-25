@@ -150,6 +150,7 @@ impl Scanner {
             ("read_file".to_string(), TokenKind::ReadFile),
             ("read_input".to_string(), TokenKind::ReadInput),
             ("len".to_string(), TokenKind::Len),
+            ("import".to_string(), TokenKind::Import),
         ]
     }
 

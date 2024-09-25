@@ -1,4 +1,9 @@
-use crate::token::{Token, TokenKind};
+use std::fs;
+
+use crate::{
+    scanner::Scanner,
+    token::{Token, TokenKind},
+};
 
 pub struct Parser {
     p: usize,
@@ -25,12 +30,17 @@ impl Parser {
         let mut decls: Vec<Declaration> = vec![];
         while parser.tokens[parser.p].kind != TokenKind::Eof {
             let decl = parser.parse_decl()?;
-            decls.push(decl);
+            match decl {
+                Declaration::Import(imported_decls) => decls.extend(imported_decls),
+                rest => decls.push(rest)
+            }
+            // decls.push(decl);
         }
         // hoist functions
         decls.sort_by(|a, _| match a {
             Declaration::Function(_, _, _) => std::cmp::Ordering::Less,
             Declaration::Statement(_) => std::cmp::Ordering::Greater,
+            Declaration::Import(_) => unreachable!("Cant have import statement")
         });
         println!("=== DECLARATIONS ===");
         for d in &decls {
@@ -50,6 +60,7 @@ impl Parser {
     fn parse_decl(&mut self) -> Result<Declaration> {
         match self.get_kind() {
             TokenKind::Fun => self.fun_decl(),
+            TokenKind::Import => self.import(),
             _ => Ok(Declaration::Statement(self.parse_stmt()?)),
         }
     }
@@ -91,6 +102,28 @@ impl Parser {
         Ok(Declaration::Function(fun_identifier, params, stmts))
     }
 
+    fn import(&mut self) -> Result<Declaration> {
+        self.p += 1;
+        let path = self.tokens[self.p].value.to_string();
+        println!("path: {path}");
+        match fs::read_to_string(path.to_string()) {
+            Ok(source) => {
+                println!("Read file:");
+                println!("{source}");
+                let tokens = match Scanner::get_tokens(source) {
+                    Ok(res) => res,
+                    Err(e) => panic!("Error scanning {:?}", e),
+                };
+                let tree = match Parser::parse(tokens) {
+                    Ok(res) => res,
+                    Err(e) => panic!("Error parsing {:?}", e),
+                };
+                Ok(Declaration::Import(tree))
+            }
+            Err(e) => panic!("Error importing file '{path}' - {e}"),
+        }
+    }
+
     /*
      *
      *   === STATEMENTS ===
@@ -107,7 +140,7 @@ impl Parser {
             TokenKind::Identifier => self.identifier_stmt(),
             TokenKind::For => self.for_stmt(),
             // TODO: Think about if this is actually correct
-            _ => self.expression_stmt()
+            _ => self.expression_stmt(),
         }
     }
 
@@ -406,6 +439,7 @@ impl Parser {
 fn infix_precedence(kind: &TokenKind) -> usize {
     match kind {
         TokenKind::Equal => 1,
+        TokenKind::Arrow => 1,
         TokenKind::Or => 2,
         TokenKind::And => 3,
         TokenKind::BangEqual | TokenKind::EqualEqual => 4,
@@ -413,7 +447,6 @@ fn infix_precedence(kind: &TokenKind) -> usize {
         TokenKind::Plus | TokenKind::Minus => 6,
         TokenKind::Star | TokenKind::Slash | TokenKind::Percent => 7,
         TokenKind::Dot | TokenKind::Colon => 9,
-        TokenKind::Arrow => 10,
         _ => 0,
     }
 }
@@ -427,6 +460,7 @@ pub enum Declaration {
     Function(String, Vec<String>, Vec<Statement>),
     // Let(String, Expr),
     Statement(Statement),
+    Import(Vec<Declaration>),
 }
 
 #[allow(dead_code)]
