@@ -128,28 +128,18 @@ impl Scanner {
     fn identifier_list(&self) -> Vec<(String, TokenKind)> {
         vec![
             ("let".to_string(), TokenKind::Let),
-            ("mut".to_string(), TokenKind::Mut),
             ("true".to_string(), TokenKind::True),
             ("and".to_string(), TokenKind::And),
-            ("class".to_string(), TokenKind::Class),
             ("else".to_string(), TokenKind::Else),
             ("if".to_string(), TokenKind::If),
             ("null".to_string(), TokenKind::Null),
             ("or".to_string(), TokenKind::Or),
-            ("print".to_string(), TokenKind::Print),
             ("return".to_string(), TokenKind::Return),
-            ("int".to_string(), TokenKind::Int),
-            ("str".to_string(), TokenKind::Str),
-            ("bool".to_string(), TokenKind::Bool),
             ("while".to_string(), TokenKind::While),
             ("false".to_string(), TokenKind::False),
             ("for".to_string(), TokenKind::For),
             ("fun".to_string(), TokenKind::Fun),
             ("in".to_string(), TokenKind::In),
-            ("new".to_string(), TokenKind::New),
-            ("read_file".to_string(), TokenKind::ReadFile),
-            ("read_input".to_string(), TokenKind::ReadInput),
-            ("len".to_string(), TokenKind::Len),
             ("import".to_string(), TokenKind::Import),
         ]
     }
@@ -283,14 +273,14 @@ impl Scanner {
     }
 
     // TODO: remove?
-    fn error_token(&self, message: &str) -> Token {
-        Token {
-            kind: TokenKind::_Error,
-            line: self.line,
-            column: self.column,
-            value: message.to_string(),
-        }
-    }
+    // fn error_token(&self, message: &str) -> Token {
+    //     Token {
+    //         kind: TokenKind::_Error,
+    //         line: self.line,
+    //         column: self.column,
+    //         value: message.to_string(),
+    //     }
+    // }
 
     fn is_at_end(&self) -> bool {
         self.current >= self.source.len()
@@ -318,48 +308,10 @@ mod tests {
         )
     }
 
-    #[test]
-    fn print_stmt() {
-        test_kinds("print \"hello\"", vec![TokenKind::Print, TokenKind::String])
-    }
-
     fn test_kinds(source: &str, expected: Vec<TokenKind>) {
         let tokens = Scanner::get_tokens(source.to_string()).unwrap();
         for (t, e) in zip(tokens, expected) {
             assert_eq!(t.kind, e)
-        }
-    }
-
-    #[test]
-    fn kinds() {
-        let source = r#"
-            int i = 1;
-            str hello = "a string";
-            print "world" + "!";
-        "#;
-        let tokens = Scanner::get_tokens(source.to_string()).unwrap();
-        let temp = vec![
-            TokenKind::Int,
-            TokenKind::Identifier,
-            TokenKind::Equal,
-            TokenKind::Number,
-            TokenKind::Semicolon,
-            TokenKind::Str,
-            TokenKind::Identifier,
-            TokenKind::Equal,
-            TokenKind::String,
-            TokenKind::Semicolon,
-            TokenKind::Print,
-            TokenKind::String,
-            TokenKind::Plus,
-            TokenKind::String,
-            TokenKind::Semicolon,
-            TokenKind::Eof,
-        ];
-        let mut i = 0;
-        for token in &tokens {
-            assert_eq!(token.kind, temp[i]);
-            i += 1;
         }
     }
 }

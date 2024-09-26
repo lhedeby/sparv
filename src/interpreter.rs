@@ -9,7 +9,7 @@ use crate::token::TokenKind as TK;
 pub enum RuntimeError {
     MissingVariable,
     NoVariableEnvironment,
-    UnexpectedType,
+    _UnexpectedType,
 }
 
 type Result<T> = std::result::Result<T, RuntimeError>;
@@ -33,9 +33,20 @@ impl Variables {
     fn end_scope(&mut self) {
         self.variables.pop();
     }
-    fn new() -> Variables {
+    fn new_with_native_fns() -> Variables {
         Self {
-            variables: vec![HashMap::new()],
+            variables: vec![HashMap::from([
+                ("print".to_string(), V::NativeFunc(1, NativeFunction::Print)),
+                (
+                    "read_file".to_string(),
+                    V::NativeFunc(1, NativeFunction::ReadFile),
+                ),
+                (
+                    "read_input".to_string(),
+                    V::NativeFunc(0, NativeFunction::ReadInput),
+                ),
+                ("len".to_string(), V::NativeFunc(1, NativeFunction::Len)),
+            ])],
             return_value: None,
         }
     }
@@ -61,9 +72,10 @@ pub struct Interpreter {}
 
 impl Interpreter {
     pub fn interpret(declarations: Vec<Declaration>) -> Result<()> {
-        let mut vars = Variables::new();
+        let mut vars = Variables::new_with_native_fns();
+
         for decl in declarations {
-            println!("parsing: {:?}", decl);
+            // println!("parsing: {:?}", decl);
             decl.interpret(&mut vars)?;
         }
         Ok(())
@@ -115,10 +127,6 @@ impl Statement {
                     }
                 }
                 vars.end_scope();
-            }
-            Statement::Print(expr) => {
-                let value = expr.interpret(vars)?;
-                println!("{}", value);
             }
             Statement::Return(expr) => {
                 // set return value in variables?
@@ -229,6 +237,7 @@ impl Expr {
                         vars.end_scope();
                         V::Null
                     }
+                    (e1, TK::Arrow, V::NativeFunc(_, kind)) => exec_native_fn(kind, vec![e1])?,
                     (a1, a2, a3) => panic!("what is this got: '{:?}', '{:?}', '{:?}'", a1, a2, a3),
                 }
             }
@@ -286,7 +295,16 @@ impl Expr {
                             }
                         }
                     }
-                    _ => panic!("Expected function"),
+                    V::NativeFunc(arity, native_fn) => {
+                        if params.len() != arity {
+                            panic!("wrong amount of parameters");
+                        }
+                        let resolved_params: Vec<V> =
+                            params.iter().map(|x| x.interpret(vars).unwrap()).collect();
+                        // TODO: naming
+                        return exec_native_fn(native_fn, resolved_params);
+                    }
+                    a => panic!("Expected function {:?}", a),
                 }
                 vars.end_scope();
 
@@ -316,34 +334,44 @@ impl Expr {
                 resolved[idx] = new_val;
                 V::Null
             }
-            Expr::ReadFile(expr) => {
-                let file_path = expr.interpret(vars)?.as_string();
-                match std::fs::read_to_string(file_path.clone()) {
-                    Ok(s) => V::String(s),
-                    Err(_) => panic!("Error reading file: {}", file_path),
-                }
-            }
-            Expr::ReadInput => {
-                println!("input prompt: ");
-                let mut buffer = String::new();
-                match io::stdin().read_line(&mut buffer) {
-                    Ok(_) => V::String(buffer),
-                    Err(_) => panic!("Error getting input"),
-                }
-            }
-            // Expr::Len(expr) => V::Number(expr.interpret(vars)?.as_list().len() as f64),
-            Expr::Len(expr) => V::Number(match expr.interpret(vars)? {
-                V::String(s) => s.len() as f64,
-                V::Number(_) => todo!("expr: {:?}", expr),
-                V::Bool(_) => todo!(),
-                V::Obj(_) => todo!(),
-                V::Func(_, _) => todo!(),
-                V::Null => todo!(),
-                V::List(v) => v.len() as f64,
-            }),
             Expr::Function(params, stmts) => V::Func(params.to_vec(), stmts.to_vec()),
         };
         Ok(res)
+    }
+}
+
+fn exec_native_fn(kind: NativeFunction, resolved_params: Vec<V>) -> Result<V> {
+    match kind {
+        NativeFunction::Print => {
+            println!("{}", resolved_params[0]);
+            Ok(resolved_params[0].clone())
+        }
+        NativeFunction::ReadFile => {
+            // remove clone?
+            let file_path = resolved_params.get(0).unwrap().clone().as_string();
+            match std::fs::read_to_string(file_path.clone()) {
+                Ok(s) => Ok(V::String(s)),
+                Err(_) => panic!("Error reading file: {}", file_path),
+            }
+        }
+        NativeFunction::ReadInput => {
+            println!("input prompt: ");
+            let mut buffer = String::new();
+            match io::stdin().read_line(&mut buffer) {
+                Ok(_) => Ok(V::String(buffer)),
+                Err(_) => panic!("Error getting input"),
+            }
+        }
+        NativeFunction::Len => Ok(V::Number(match &resolved_params[0] {
+            V::String(s) => s.len() as f64,
+            V::Number(_) => todo!(),
+            V::Bool(_) => todo!(),
+            V::Obj(_) => todo!(),
+            V::Func(..) => todo!(),
+            V::Null => todo!(),
+            V::List(v) => v.len() as f64,
+            V::NativeFunc(..) => todo!(),
+        })),
     }
 }
 
@@ -362,8 +390,17 @@ pub enum V {
     Bool(bool),
     Obj(HashMap<String, V>),
     Func(Vec<String>, Vec<Statement>),
+    NativeFunc(usize, NativeFunction),
     Null,
     List(Vec<V>),
+}
+
+#[derive(Debug, Clone)]
+pub enum NativeFunction {
+    Print,
+    ReadFile,
+    ReadInput,
+    Len,
 }
 
 impl Display for V {
@@ -372,15 +409,22 @@ impl Display for V {
             V::String(s) => write!(f, "{}", s),
             V::Number(n) => write!(f, "{}", n),
             V::Bool(b) => write!(f, "{}", b),
-            V::Obj(o) => todo!(),
-            V::Func(params, stmts) => todo!(),
-            V::Null => write!(f, "null"),
-            V::List(items) => {
-                for item in items {
-                    write!(f, "{} ", item)?;
+            V::Obj(o) => {
+                // TODO: better readability
+                for (k, v) in o {
+                    writeln!(f, "{}: {}", k, v)?
                 }
                 Ok(())
             }
+            V::Func(..) => write!(f, "<function>"),
+            V::Null => write!(f, "null"),
+            V::List(items) => {
+                for item in items {
+                    write!(f, "{} ", item)?
+                }
+                Ok(())
+            }
+            V::NativeFunc(_, name) => write!(f, "<native fn {:?}>", name),
         }
     }
 }
@@ -389,60 +433,46 @@ impl V {
     fn as_mut_list(&mut self) -> &mut Vec<V> {
         match self {
             V::List(l) => l,
-            V::Obj(_) | V::Null | V::String(_) | V::Bool(_) | V::Number(_) | V::Func(..) => {
-                panic!("not a list.")
-            }
+            _ => panic!("not a list."),
         }
     }
 
     fn as_list(self) -> Vec<V> {
         match self {
             V::List(l) => l,
-            V::Obj(_) | V::Null | V::String(_) | V::Bool(_) | V::Number(_) | V::Func(..) => {
-                panic!("not a list.")
-            }
+            _ => panic!("not a list."),
         }
     }
 
     fn as_mut_obj(&mut self) -> &mut HashMap<String, V> {
         match self {
             V::Obj(o) => o,
-            V::List(_) | V::Null | V::String(_) | V::Bool(_) | V::Number(_) | V::Func(..) => {
-                panic!("not an object.")
-            }
+            _ => panic!("not an object."),
         }
     }
-    fn as_obj(self) -> HashMap<String, V> {
+    fn _as_obj(self) -> HashMap<String, V> {
         match self {
             V::Obj(o) => o,
-            V::List(_) | V::Null | V::String(_) | V::Bool(_) | V::Number(_) | V::Func(..) => {
-                panic!("not an object.")
-            }
+            _ => panic!("not an object."),
         }
     }
     fn as_num(self) -> f64 {
         match self {
             V::Number(n) => n,
-            V::List(_) | V::Null | V::String(_) | V::Bool(_) | V::Obj(_) | V::Func(..) => {
-                panic!("not a number.")
-            }
+            _ => panic!("not a number."),
         }
     }
     fn as_bool(self) -> bool {
         match self {
             V::Bool(b) => b,
-            V::List(_) | V::Null | V::String(_) | V::Number(_) | V::Obj(_) | V::Func(..) => {
-                panic!("not a bool.")
-            }
+            _ => panic!("not a bool."),
         }
     }
 
     fn as_string(self) -> String {
         match self {
             V::String(s) => s,
-            V::List(_) | V::Null | V::Bool(_) | V::Number(_) | V::Obj(_) | V::Func(..) => {
-                panic!("not a string.")
-            }
+            _ => panic!("not a string."),
         }
     }
 }

@@ -134,7 +134,6 @@ impl Parser {
         match self.get_kind() {
             TokenKind::While => self.while_stmt(),
             TokenKind::If => self.if_stmt(),
-            TokenKind::Print => self.print_stmt(),
             TokenKind::Return => self.return_stmt(),
             TokenKind::Let => self.let_stmt(),
             TokenKind::Identifier => self.identifier_stmt(),
@@ -202,12 +201,6 @@ impl Parser {
         self.consume(TokenKind::RightBrace)?;
 
         Ok(Statement::If(expr, if_stmts, else_stmts))
-    }
-    fn print_stmt(&mut self) -> Result<Statement> {
-        self.p += 1;
-        let expr = self.parse_expr(0)?;
-        self.consume(TokenKind::Semicolon)?;
-        Ok(Statement::Print(expr))
     }
     fn return_stmt(&mut self) -> Result<Statement> {
         self.p += 1;
@@ -370,13 +363,6 @@ impl Parser {
                 self.consume(TokenKind::RightBrace)?;
                 Ok(Expr::Object(res))
             }
-
-            /*
-                        BUILT INS
-            */
-            TokenKind::ReadFile => Ok(Expr::ReadFile(Box::new(self.parse_expr(0)?))),
-            TokenKind::ReadInput => Ok(Expr::ReadInput),
-            TokenKind::Len => Ok(Expr::Len(Box::new(self.parse_expr(0)?))),
             _ => Err(ParserError::unexpected_token(self.get_token(), None)),
         }
     }
@@ -470,7 +456,6 @@ pub enum Statement {
     Let(String, Expr),
     For(String, Expr, Vec<Statement>),
     If(Expr, Vec<Statement>, Vec<Statement>),
-    Print(Expr),
     Return(Expr),
     While(Expr, Vec<Statement>),
     Assignment(String, Vec<String>, Expr),
@@ -493,9 +478,6 @@ pub enum Expr {
     List(Vec<Expr>),
     Index(Box<Expr>, Box<Expr>),
     SetList(Box<Expr>, Box<Expr>, Box<Expr>),
-    ReadFile(Box<Expr>),
-    ReadInput,
-    Len(Box<Expr>),
 }
 
 #[cfg(test)]

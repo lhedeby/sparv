@@ -1,35 +1,8 @@
-import "test.gran";
-fun get_list() {
-    return [1,2,3];
-}
+o = {
+    i = 35,
+    n1 = {
+        s = "foo",
+    },
+};
 
-fun square_list(list) {
-    for i in 0:len list {
-        list[i] = list[i] * list[i];
-    }
-    return list;
-}
-
-fun print_list(list) {
-    print list;
-    return list;
-}
-
-fun add(list) {
-    for i in 0:len list {
-        list[i] = list[i]+1;
-    }
-    return list;
-}
-
-
-
-// why does it not work with 0:4?
-
-
-0:5->
-    square_list->
-    add->
-    print_list;
-
-
+print(o);
