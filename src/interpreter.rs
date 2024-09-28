@@ -25,7 +25,7 @@ impl Variables {
         for v in &mut self.variables {
             if v.contains_key(&s) {
                 v.insert(s.to_string(), value.clone());
-                return Ok(())
+                return Ok(());
             }
         }
         Err(RuntimeError::MissingVariable)
@@ -60,6 +60,10 @@ impl Variables {
                     V::NativeFunc(2, NativeFunction::Append),
                 ),
                 ("split".to_string(), V::NativeFunc(2, NativeFunction::Split)),
+                (
+                    "split_lines".to_string(),
+                    V::NativeFunc(1, NativeFunction::SplitLines),
+                ),
                 ("len".to_string(), V::NativeFunc(1, NativeFunction::Len)),
             ])],
             return_value: None,
@@ -120,10 +124,8 @@ impl Statement {
                 vars.add(name.to_string(), expr)?;
             }
             Statement::For(i, expr, stmts) => {
-                println!("for loop");
                 let list = expr.interpret(vars)?.as_list();
                 for item in list {
-                    println!("vars: {:#?}", vars);
                     vars.begin_scope();
                     vars.add(i.to_string(), item)?;
                     for stmt in stmts {
@@ -187,7 +189,6 @@ impl Expr {
                     // TODO
                     (V::Number(f1), TK::Percent, V::Number(f2)) => V::Number(f1 % f2),
 
-
                     /*
                      *   List Concatenation
                      */
@@ -231,7 +232,6 @@ impl Expr {
                      *   Reassignment
                      */
                     (V::String(s), TK::Equal, v) => {
-                        println!("RE!assigning!");
                         // vars.add(s, v)?;
                         vars.re_assign(s, v)?;
                         V::Number(0.0)
@@ -389,14 +389,30 @@ fn exec_native_fn(kind: NativeFunction, resolved_params: Vec<V>) -> Result<V> {
             }
         }
         NativeFunction::Split => {
-            todo!()
+            let s = resolved_params[0].clone().as_string();
+            let delim = resolved_params[1]
+                .clone()
+                .as_string()
+                .replace("\\n", "\n")
+                .replace("\\r", "\r");
+            let split: Vec<V> = s
+                .split_terminator(&delim)
+                .map(|x| V::String(x.to_string().replace("\\r", "")))
+                .collect();
+            Ok(V::List(split))
         }
+        NativeFunction::SplitLines => Ok(V::List(
+            resolved_params[0]
+                .clone()
+                .as_string()
+                .lines()
+                .map(|x| V::String(x.to_string()))
+                .collect(),
+        )),
         NativeFunction::Append => {
-            println!("params {:?}", resolved_params);
-            let mut test = resolved_params[0].clone().as_list();
-            test.push(resolved_params[1].clone());
-            println!("test {:?}", test);
-            Ok(V::List(test))
+            let mut new_list = resolved_params[0].clone().as_list();
+            new_list.push(resolved_params[1].clone());
+            Ok(V::List(new_list))
         }
         NativeFunction::Len => Ok(V::Number(match &resolved_params[0] {
             V::String(s) => s.len() as f64,
@@ -438,6 +454,7 @@ pub enum NativeFunction {
     ReadInput,
     Len,
     Split,
+    SplitLines,
     Append,
 }
 
@@ -457,10 +474,15 @@ impl Display for V {
             V::Func(..) => write!(f, "<function>"),
             V::Null => write!(f, "null"),
             V::List(items) => {
-                for item in items {
-                    write!(f, "{} ", item)?
-                }
-                Ok(())
+                write!(
+                    f,
+                    "[{}]",
+                    items
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                )
             }
             V::NativeFunc(_, name) => write!(f, "<native fn {:?}>", name),
         }

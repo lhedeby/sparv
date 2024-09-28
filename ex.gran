@@ -7,13 +7,7 @@
 
 // todo append to list?
 
-let i = [1];
 
-for j in 0:3 {
-    i = i + [j];
-    //print("hello");
-}
 
+let i = read_file("test.gran")->split_lines->print;
 print(i);
-
-
