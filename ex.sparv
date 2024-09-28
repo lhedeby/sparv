@@ -9,5 +9,5 @@
 
 
 
-let i = read_file("test.gran")->split_lines->print;
+let i = read_file("test.sparv")->split_lines->print;
 print(i);

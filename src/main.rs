@@ -9,13 +9,13 @@ mod token;
 
 fn main() {
     // env::set_var("RUST_BACKTRACE", "1");
-    println!("Gran compiler started...");
+    println!("Sparv compiler started...");
     let args: Vec<String> = env::args().collect();
     match args.len() {
         2 => run_file(args.last().unwrap()),
         _ => panic!("Expected file path as only parameter"),
     }
-    println!("Gran compiler stopped...");
+    println!("Sparv compiler stopped...");
 }
 
 pub fn run_file(file_path: &str) {
