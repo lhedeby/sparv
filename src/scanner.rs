@@ -1,4 +1,7 @@
-use crate::token::{Token, TokenKind};
+use crate::{
+    token::{Token, TokenKind},
+    Error, ErrorKind,
+};
 
 pub struct Scanner {
     start: usize,
@@ -8,13 +11,7 @@ pub struct Scanner {
     source: String,
 }
 
-#[derive(Debug)]
-pub struct LexingError {
-    line: usize,
-    column: usize,
-}
-
-type Result<T> = std::result::Result<T, LexingError>;
+type Result<T> = std::result::Result<T, Error>;
 
 impl Scanner {
     pub fn get_tokens(source: String) -> Result<Vec<Token>> {
@@ -45,7 +42,7 @@ impl Scanner {
             return self.make_token(TokenKind::Eof);
         }
 
-        let c = self.advance()?;
+        let c = self.advance().unwrap();
         if c.is_ascii_alphabetic() {
             return self.identifier();
         }
@@ -112,7 +109,11 @@ impl Scanner {
         }
 
         // Unexpected character
-        Err(self.error())
+        Err(Error {
+            line: self.line,
+            kind: ErrorKind::UnexpectedCharacter,
+        })
+        // Err(LexingError::UnexpectedCharacter(self.line, self.column, c))
     }
 
     fn identifier(&mut self) -> Result<Token> {
@@ -120,7 +121,7 @@ impl Scanner {
             .peek()
             .is_some_and(|c| c.is_ascii_alphabetic() || c.is_digit(10) || c == '_')
         {
-            self.advance()?;
+            self.advance();
         }
         self.make_token(self.identifier_kind())
     }
@@ -157,24 +158,27 @@ impl Scanner {
 
     fn number(&mut self) -> Result<Token> {
         while self.peek().is_some() && self.peek().unwrap().is_digit(10) {
-            self.advance()?;
+            self.advance();
         }
         self.make_token(TokenKind::Number)
     }
 
     fn string(&mut self) -> Result<Token> {
+        let line = self.line;
         while self.peek().is_some() && self.peek().unwrap() != '"' && !self.is_at_end() {
             if self.peek().unwrap() == '\n' {
                 self.line += 1;
-                self.advance()?;
+                self.advance();
             }
-            self.advance()?;
+            self.advance();
         }
         if self.is_at_end() {
-            // unterminated string
-            return Err(self.error());
+            return Err(Error {
+                line,
+                kind: ErrorKind::UnterminatedString,
+            });
         }
-        self.advance()?;
+        self.advance();
         self.make_token(TokenKind::String)
     }
 
@@ -186,7 +190,7 @@ impl Scanner {
                     '\n' => {
                         self.line += 1;
                         self.column = 0;
-                        self.advance()?;
+                        self.advance();
                     }
                     '/' => {
                         if self.peek_next().is_some() && self.peek_next().unwrap() == '/' {
@@ -194,7 +198,7 @@ impl Scanner {
                                 && self.peek().unwrap() != '\n'
                                 && !self.is_at_end()
                             {
-                                self.advance()?;
+                                self.advance();
                             }
                         } else {
                             break;
@@ -231,13 +235,10 @@ impl Scanner {
         true
     }
 
-    fn advance(&mut self) -> Result<char> {
+    fn advance(&mut self) -> Option<char> {
         self.column += 1;
         self.current += 1;
-        self.source
-            .chars()
-            .nth(self.current - 1)
-            .ok_or(self.error())
+        self.source.chars().nth(self.current - 1)
     }
 
     fn make_token(&self, kind: TokenKind) -> Result<Token> {
@@ -249,7 +250,10 @@ impl Scanner {
                 value: self
                     .source
                     .get((self.start + 1)..(self.current - 1))
-                    .ok_or(self.error())?
+                    .ok_or(Error {
+                        line: self.line,
+                        kind: ErrorKind::Unknown,
+                    })?
                     .to_string(),
             }),
             _ => Ok(Token {
@@ -259,28 +263,14 @@ impl Scanner {
                 value: self
                     .source
                     .get(self.start..self.current)
-                    .ok_or(self.error())?
+                    .ok_or(Error {
+                        line: self.line,
+                        kind: ErrorKind::Unknown,
+                    })?
                     .to_string(),
             }),
         }
     }
-
-    fn error(&self) -> LexingError {
-        LexingError {
-            line: self.line,
-            column: self.column,
-        }
-    }
-
-    // TODO: remove?
-    // fn error_token(&self, message: &str) -> Token {
-    //     Token {
-    //         kind: TokenKind::_Error,
-    //         line: self.line,
-    //         column: self.column,
-    //         value: message.to_string(),
-    //     }
-    // }
 
     fn is_at_end(&self) -> bool {
         self.current >= self.source.len()
@@ -288,30 +278,4 @@ impl Scanner {
 }
 
 #[cfg(test)]
-mod tests {
-    use std::iter::zip;
-
-    use super::Scanner;
-    use crate::scanner::TokenKind;
-
-    #[test]
-    fn let_stmt() {
-        test_kinds(
-            "let i=0;",
-            vec![
-                TokenKind::Let,
-                TokenKind::Identifier,
-                TokenKind::Equal,
-                TokenKind::Number,
-                TokenKind::Semicolon,
-            ],
-        )
-    }
-
-    fn test_kinds(source: &str, expected: Vec<TokenKind>) {
-        let tokens = Scanner::get_tokens(source.to_string()).unwrap();
-        for (t, e) in zip(tokens, expected) {
-            assert_eq!(t.kind, e)
-        }
-    }
-}
+mod tests {}

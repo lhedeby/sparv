@@ -3,6 +3,7 @@ use std::fs;
 use crate::{
     scanner::Scanner,
     token::{Token, TokenKind},
+    Error, ErrorKind,
 };
 
 pub struct Parser {
@@ -10,19 +11,7 @@ pub struct Parser {
     tokens: Vec<Token>,
 }
 
-#[derive(Debug)]
-pub enum ParserError {
-    UnexpectedToken(usize, usize, TokenKind, Option<TokenKind>),
-    Assignment(usize),
-}
-
-impl ParserError {
-    fn unexpected_token(token: &Token, expected: Option<TokenKind>) -> ParserError {
-        ParserError::UnexpectedToken(token.line, token.column, token.kind, expected)
-    }
-}
-
-type Result<T> = std::result::Result<T, ParserError>;
+type Result<T> = std::result::Result<T, Error>;
 
 impl Parser {
     pub fn parse(tokens: Vec<Token>) -> Result<Vec<Declaration>> {
@@ -32,15 +21,16 @@ impl Parser {
             let decl = parser.parse_decl()?;
             match decl {
                 Declaration::Import(imported_decls) => decls.extend(imported_decls),
-                rest => decls.push(rest)
+                rest => decls.push(rest),
             }
-            // decls.push(decl);
         }
         // hoist functions
         decls.sort_by(|a, _| match a {
-            Declaration::Function(_, _, _) => std::cmp::Ordering::Less,
+            Declaration::Function(..) => std::cmp::Ordering::Less,
             Declaration::Statement(_) => std::cmp::Ordering::Greater,
-            Declaration::Import(_) => unreachable!("Cant have import statement")
+            Declaration::Import(_) => {
+                unreachable!("All import declarations are resolved by this point")
+            }
         });
         println!("=== DECLARATIONS ===");
         for d in &decls {
@@ -82,7 +72,12 @@ impl Parser {
                     self.p += 1;
                 }
                 TokenKind::RightParen => break,
-                _ => return Err(ParserError::unexpected_token(self.get_token(), None)),
+                _ => {
+                    return Err(Error {
+                        line: self.get_token().line,
+                        kind: ErrorKind::UnexpectedToken,
+                    })
+                }
             }
         }
         self.consume(TokenKind::RightParen)?;
@@ -105,22 +100,16 @@ impl Parser {
     fn import(&mut self) -> Result<Declaration> {
         self.p += 1;
         let path = self.tokens[self.p].value.to_string();
-        println!("path: {path}");
         match fs::read_to_string(path.to_string()) {
             Ok(source) => {
-                println!("Read file:");
-                println!("{source}");
-                let tokens = match Scanner::get_tokens(source) {
-                    Ok(res) => res,
-                    Err(e) => panic!("Error scanning {:?}", e),
-                };
-                let tree = match Parser::parse(tokens) {
-                    Ok(res) => res,
-                    Err(e) => panic!("Error parsing {:?}", e),
-                };
+                let tokens = Scanner::get_tokens(source)?;
+                let tree = Parser::parse(tokens)?;
                 Ok(Declaration::Import(tree))
             }
-            Err(e) => panic!("Error importing file '{path}' - {e}"),
+            Err(_) => Err(Error {
+                line: self.get_token().line,
+                kind: ErrorKind::Import(path),
+            }),
         }
     }
 
@@ -245,7 +234,7 @@ impl Parser {
         let kind = &self.tokens[self.p].kind.clone();
         self.p += 1;
 
-        let mut left = self.parse_prefix(kind).unwrap().clone();
+        let mut left = self.parse_prefix(kind)?.clone();
 
         while precedence < infix_precedence(&self.tokens[self.p].kind) {
             let token_kind = self.tokens[self.p].kind;
@@ -329,7 +318,12 @@ impl Parser {
                             self.p += 1;
                         }
                         TokenKind::RightParen => break,
-                        _ => return Err(ParserError::unexpected_token(self.get_token(), None)),
+                        _ => {
+                            return Err(Error {
+                                line: self.get_token().line,
+                                kind: ErrorKind::UnexpectedToken,
+                            })
+                        }
                     }
                 }
                 self.consume(TokenKind::RightParen)?;
@@ -363,7 +357,10 @@ impl Parser {
                 self.consume(TokenKind::RightBrace)?;
                 Ok(Expr::Object(res))
             }
-            _ => Err(ParserError::unexpected_token(self.get_token(), None)),
+            _ => Err(Error {
+                line: self.get_token().line,
+                kind: ErrorKind::UnexpectedToken,
+            }),
         }
     }
 
@@ -381,7 +378,10 @@ impl Parser {
                     Ok(Expr::Set(s.to_string(), g_expr.clone(), Box::new(right)))
                 }
                 Expr::Index(e1, e2) => Ok(Expr::SetList(e1.clone(), e2.clone(), Box::new(right))),
-                _ => Err(ParserError::Assignment(self.get_token().line)),
+                _ => Err(Error {
+                    line: self.get_token().line,
+                    kind: ErrorKind::Assignment,
+                }),
             },
             _ => Ok(Expr::Operator(
                 Box::new(expr.clone()),
@@ -393,10 +393,10 @@ impl Parser {
 
     fn consume(&mut self, expected_token: TokenKind) -> Result<()> {
         if expected_token != self.tokens[self.p].kind {
-            return Err(ParserError::unexpected_token(
-                self.get_token(),
-                Some(expected_token),
-            ));
+            return Err(Error {
+                line: self.get_token().line,
+                kind: ErrorKind::UnexpectedToken,
+            });
         }
         self.p += 1;
         Ok(())
@@ -425,13 +425,13 @@ impl Parser {
 fn infix_precedence(kind: &TokenKind) -> usize {
     match kind {
         TokenKind::Equal => 1,
-        TokenKind::Arrow => 1,
-        TokenKind::Or => 2,
-        TokenKind::And => 3,
-        TokenKind::BangEqual | TokenKind::EqualEqual => 4,
-        TokenKind::Greater | TokenKind::GreaterEqual | TokenKind::Less | TokenKind::LessEqual => 5,
-        TokenKind::Plus | TokenKind::Minus => 6,
-        TokenKind::Star | TokenKind::Slash | TokenKind::Percent => 7,
+        TokenKind::Arrow => 2,
+        TokenKind::Or => 3,
+        TokenKind::And => 4,
+        TokenKind::BangEqual | TokenKind::EqualEqual => 5,
+        TokenKind::Greater | TokenKind::GreaterEqual | TokenKind::Less | TokenKind::LessEqual => 6,
+        TokenKind::Plus | TokenKind::Minus => 7,
+        TokenKind::Star | TokenKind::Slash | TokenKind::Percent => 8,
         TokenKind::Dot | TokenKind::Colon => 9,
         _ => 0,
     }

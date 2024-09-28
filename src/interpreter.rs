@@ -14,12 +14,22 @@ pub enum RuntimeError {
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 
+#[derive(Debug)]
 pub struct Variables {
     variables: Vec<HashMap<String, V>>,
     return_value: Option<V>,
 }
 
 impl Variables {
+    fn re_assign(&mut self, s: String, value: V) -> Result<()> {
+        for v in &mut self.variables {
+            if v.contains_key(&s) {
+                v.insert(s.to_string(), value.clone());
+                return Ok(())
+            }
+        }
+        Err(RuntimeError::MissingVariable)
+    }
     fn add(&mut self, s: String, value: V) -> Result<()> {
         self.variables
             .last_mut()
@@ -45,6 +55,11 @@ impl Variables {
                     "read_input".to_string(),
                     V::NativeFunc(0, NativeFunction::ReadInput),
                 ),
+                (
+                    "append".to_string(),
+                    V::NativeFunc(2, NativeFunction::Append),
+                ),
+                ("split".to_string(), V::NativeFunc(2, NativeFunction::Split)),
                 ("len".to_string(), V::NativeFunc(1, NativeFunction::Len)),
             ])],
             return_value: None,
@@ -105,15 +120,17 @@ impl Statement {
                 vars.add(name.to_string(), expr)?;
             }
             Statement::For(i, expr, stmts) => {
-                vars.begin_scope();
+                println!("for loop");
                 let list = expr.interpret(vars)?.as_list();
                 for item in list {
+                    println!("vars: {:#?}", vars);
+                    vars.begin_scope();
                     vars.add(i.to_string(), item)?;
                     for stmt in stmts {
                         stmt.interpret(vars)?;
                     }
+                    vars.end_scope();
                 }
-                vars.end_scope();
             }
             Statement::If(expr, if_stmts, else_stmts) => {
                 vars.begin_scope();
@@ -170,6 +187,11 @@ impl Expr {
                     // TODO
                     (V::Number(f1), TK::Percent, V::Number(f2)) => V::Number(f1 % f2),
 
+
+                    /*
+                     *   List Concatenation
+                     */
+                    (V::List(l1), TK::Plus, V::List(l2)) => V::List([l1, l2].concat()),
                     /*
                      *   Concatenation
                      */
@@ -209,7 +231,9 @@ impl Expr {
                      *   Reassignment
                      */
                     (V::String(s), TK::Equal, v) => {
-                        vars.add(s, v)?;
+                        println!("RE!assigning!");
+                        // vars.add(s, v)?;
+                        vars.re_assign(s, v)?;
                         V::Number(0.0)
                     }
 
@@ -302,7 +326,9 @@ impl Expr {
                         let resolved_params: Vec<V> =
                             params.iter().map(|x| x.interpret(vars).unwrap()).collect();
                         // TODO: naming
-                        return exec_native_fn(native_fn, resolved_params);
+                        let res = exec_native_fn(native_fn, resolved_params);
+                        vars.end_scope();
+                        return res;
                     }
                     a => panic!("Expected function {:?}", a),
                 }
@@ -347,7 +373,7 @@ fn exec_native_fn(kind: NativeFunction, resolved_params: Vec<V>) -> Result<V> {
             Ok(resolved_params[0].clone())
         }
         NativeFunction::ReadFile => {
-            // remove clone?
+            // TODO: remove clone
             let file_path = resolved_params.get(0).unwrap().clone().as_string();
             match std::fs::read_to_string(file_path.clone()) {
                 Ok(s) => Ok(V::String(s)),
@@ -361,6 +387,16 @@ fn exec_native_fn(kind: NativeFunction, resolved_params: Vec<V>) -> Result<V> {
                 Ok(_) => Ok(V::String(buffer)),
                 Err(_) => panic!("Error getting input"),
             }
+        }
+        NativeFunction::Split => {
+            todo!()
+        }
+        NativeFunction::Append => {
+            println!("params {:?}", resolved_params);
+            let mut test = resolved_params[0].clone().as_list();
+            test.push(resolved_params[1].clone());
+            println!("test {:?}", test);
+            Ok(V::List(test))
         }
         NativeFunction::Len => Ok(V::Number(match &resolved_params[0] {
             V::String(s) => s.len() as f64,
@@ -401,6 +437,8 @@ pub enum NativeFunction {
     ReadFile,
     ReadInput,
     Len,
+    Split,
+    Append,
 }
 
 impl Display for V {
