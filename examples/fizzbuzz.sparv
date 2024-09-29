@@ -1,0 +1,24 @@
+fun map(list, fn) {
+    let res = [];
+    for item in list {
+        res = res + [fn(item)];
+    }
+    return res;
+}
+
+fun fizzbuzz(n) {
+    if n % 15 == 0 {
+        return "fizzbuzz";
+    }
+    if n % 5 == 0 {
+        return "buzz";
+    }
+    if n % 3 == 0 {
+        return "fizz";
+    }
+    return n;
+}
+
+let res = map(0:100, fizzbuzz);
+print(res);
+
