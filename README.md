@@ -1,7 +1,8 @@
 # Sparv
 
 Sparv is a interpreted dynamically typed language. It aims to be a all-purpose
-programming language with inspiration from object oriented, functional and scripting languages.
+programming language with inspiration from many different language. If you familiar with any c-style
+language you probably will feel at home.
 
 ## Installation
 
