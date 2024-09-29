@@ -1,9 +1,7 @@
 use std::fs;
 
 use crate::{
-    scanner::Scanner,
-    token::{Token, TokenKind},
-    Error, ErrorKind,
+    error::{Error, ErrorKind}, scanner::Scanner, token::{Token, TokenKind}
 };
 
 pub struct Parser {
@@ -76,6 +74,7 @@ impl Parser {
                     return Err(Error {
                         line: self.get_token().line,
                         kind: ErrorKind::UnexpectedToken,
+                        cols: self.get_cols(),
                     })
                 }
             }
@@ -109,6 +108,7 @@ impl Parser {
             Err(_) => Err(Error {
                 line: self.get_token().line,
                 kind: ErrorKind::Import(path),
+                cols: self.get_cols(),
             }),
         }
     }
@@ -322,6 +322,7 @@ impl Parser {
                             return Err(Error {
                                 line: self.get_token().line,
                                 kind: ErrorKind::UnexpectedToken,
+                                cols: self.get_cols(),
                             })
                         }
                     }
@@ -360,6 +361,7 @@ impl Parser {
             _ => Err(Error {
                 line: self.get_token().line,
                 kind: ErrorKind::UnexpectedToken,
+                cols: self.get_cols(),
             }),
         }
     }
@@ -381,6 +383,7 @@ impl Parser {
                 _ => Err(Error {
                     line: self.get_token().line,
                     kind: ErrorKind::Assignment,
+                    cols: self.get_cols(),
                 }),
             },
             _ => Ok(Expr::Operator(
@@ -396,10 +399,15 @@ impl Parser {
             return Err(Error {
                 line: self.get_token().line,
                 kind: ErrorKind::UnexpectedToken,
+                cols: self.get_cols(),
             });
         }
         self.p += 1;
         Ok(())
+    }
+
+    fn get_cols(&mut self) -> Option<(usize, usize)> {
+        Some((self.tokens[self.p - 1].column, self.tokens[self.p].column))
     }
 
     fn get_token(&mut self) -> &Token {

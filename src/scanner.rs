@@ -1,6 +1,5 @@
 use crate::{
-    token::{Token, TokenKind},
-    Error, ErrorKind,
+    error::{Error, ErrorKind}, token::{Token, TokenKind}
 };
 
 pub struct Scanner {
@@ -112,6 +111,7 @@ impl Scanner {
         Err(Error {
             line: self.line,
             kind: ErrorKind::UnexpectedCharacter,
+            cols: Some((self.start, self.current)),
         })
         // Err(LexingError::UnexpectedCharacter(self.line, self.column, c))
     }
@@ -176,6 +176,7 @@ impl Scanner {
             return Err(Error {
                 line,
                 kind: ErrorKind::UnterminatedString,
+                cols: Some((self.start, self.current)),
             });
         }
         self.advance();
@@ -253,6 +254,7 @@ impl Scanner {
                     .ok_or(Error {
                         line: self.line,
                         kind: ErrorKind::Unknown,
+                        cols: Some((self.start, self.current)),
                     })?
                     .to_string(),
             }),
@@ -266,6 +268,7 @@ impl Scanner {
                     .ok_or(Error {
                         line: self.line,
                         kind: ErrorKind::Unknown,
+                        cols: Some((self.start, self.current)),
                     })?
                     .to_string(),
             }),

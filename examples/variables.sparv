@@ -1,0 +1,8 @@
+// Use let to declare a variable
+let i = 5;
+
+// Reassign without let
+i = 3;
+
+
+
