@@ -6,7 +6,7 @@ language you probably will feel at home.
 
 ## Installation
 
-The easiset way to install sparv is to build [Rust](https://www.rust-lang.org/)
+To get started with sparv you can either download the binaries from the release or build it yourself with [Rust](https://www.rust-lang.org/)
 
 ```
     git clone https://github.com/lhedeby/sparv
