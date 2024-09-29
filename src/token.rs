@@ -2,6 +2,7 @@
 pub struct Token {
     pub kind: TokenKind,
     pub line: usize,
+    pub start: usize,
     pub column: usize,
     pub value: String,
 }

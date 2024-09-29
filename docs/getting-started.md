@@ -61,7 +61,7 @@ The normal control flow statement should look familiar to you if you got previou
 
 ## Lists
 
-The ``0:10`` syntax you saw earlier is actually just a list. All for loop are actually for-each loops:
+The ``0:10`` syntax you saw earlier is actually just a list. All for loop are just for-each loops:
 ```ts
     let list = 0:4; // [0, 1, 2, 3]
     let same = [0, 1, 2, 3];
@@ -82,5 +82,60 @@ Functions can be declared using the ``fun`` keyword:
         return number * number;
     }
 
-    let result = square(10); // == 100
+    let result = square(2); // = 4
+```
+If they only have 1 line of code no function body is needed. Also they're first class, meaning they are treated like any other variable:
+```ts
+    fun square(number) return number * number;
+
+    // they can also be assigned to a variable directly
+    let map = fun(list, fn) {
+        let res = [];
+        for item in list {
+            // append to the list
+            res = res + [fn(item)];
+        }
+        return res;
+    };
+
+    let res = map([1,2,3], square); // = [1, 4, 9]
+```
+
+Fucntions can also be chained with the ``->`` operator. It passes the value of the evaluated expression to the next function:
+```ts
+    // these 2 function will always be defined in the following 'function' examples
+    fun square(number) return number * number;
+    fun double(number) return number + number;
+
+    1->double; // == double(1);
+    1->double->square; // == square(double(1));
+```
+There's no need to to invoke the function with ``()``. It's called with a single parameter.  
+
+
+You can also assign the result of an arrow expression
+```ts
+    ...
+
+    let i = 1->double; // = 2
+    print(i); // prints 2
+```
+But the easier way would be to just chain the print expression:
+```ts
+    ...
+
+    1->double->print;
+```
+The native function print conveniently returns the printed value. So you can keep on chaining:
+```ts
+    ...
+
+    // Let's add some line breaks for readability!
+    1->
+        double-> // 2
+        print-> // prints '2'
+        square-> // 4
+        square-> // 16
+        print; // prints '16'
+
 ```

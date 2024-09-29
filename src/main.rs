@@ -21,19 +21,20 @@ fn main() {
 pub fn run_file(file_path: &str) {
     match fs::read_to_string(file_path) {
         Ok(source) => {
+
+            println!("Running: {file_path}");
             let tokens = match Scanner::get_tokens(source.to_string()) {
                 Ok(res) => res,
                 Err(e) => {
-                    println!("{} at {}:", file_path, e.line);
-                    println!("Lexing Error - {}", e);
+                    println!("Lexing Error");
+                    print_error(e, file_path, &source);
                     return;
                 }
             };
             let tree = match Parser::parse(tokens) {
                 Ok(res) => res,
                 Err(e) => {
-                    println!("{} at {}:", file_path, e.line);
-                    println!("Parsing Error - {}", e);
+                    println!("Parsing Error");
                     print_error(e, file_path, &source);
                     return;
                 }

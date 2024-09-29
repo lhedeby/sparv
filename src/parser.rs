@@ -30,11 +30,11 @@ impl Parser {
                 unreachable!("All import declarations are resolved by this point")
             }
         });
-        println!("=== DECLARATIONS ===");
-        for d in &decls {
-            println!("{:?}", d);
-        }
-        println!("\n");
+        // println!("=== DECLARATIONS ===");
+        // for d in &decls {
+        //     println!("{:?}", d);
+        // }
+        // println!("\n");
 
         Ok(decls)
     }
@@ -407,7 +407,7 @@ impl Parser {
     }
 
     fn get_cols(&mut self) -> Option<(usize, usize)> {
-        Some((self.tokens[self.p - 1].column, self.tokens[self.p].column))
+        Some((self.tokens[self.p].start, self.tokens[self.p].column))
     }
 
     fn get_token(&mut self) -> &Token {

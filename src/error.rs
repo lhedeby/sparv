@@ -2,8 +2,9 @@ use std::fmt::Display;
 
 pub fn print_error(e: Error, file_path: &str, source: &str) {
     let lines = source.lines().collect::<Vec<&str>>();
-    // let include_next_line = e.line < lines.len();
+
     let include_prev_line = e.line > 1;
+    println!("include: {}", include_prev_line);
     let max_len = e.line.to_string().len() + 2;
 
     println!("Error in /{}", file_path);

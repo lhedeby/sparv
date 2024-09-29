@@ -1,0 +1,18 @@
+// recursive
+fun fibonacci(n) {
+    if n == 0 or n == 1 {
+        return n;
+    }
+    return fibonacci(n-1) + fibonacci(n-2);
+}
+
+// much better perfomance
+fun fib(n) {
+    let numbers = [1,1];
+
+    while n > len(numbers) {
+        let next = numbers[len(numbers)-1] + numbers[len(numbers)-2];
+        numbers = numbers + [next];
+    }
+    return numbers[len(numbers)-1];
+}

@@ -248,6 +248,7 @@ impl Scanner {
                 kind,
                 line: self.line,
                 column: self.column,
+                start: self.current - self.start,
                 value: self
                     .source
                     .get((self.start + 1)..(self.current - 1))
@@ -262,6 +263,7 @@ impl Scanner {
                 kind,
                 line: self.line,
                 column: self.column,
+                start: self.current - self.start,
                 value: self
                     .source
                     .get(self.start..self.current)
