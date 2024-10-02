@@ -30,6 +30,21 @@ impl Variables {
         }
         Err(RuntimeError::MissingVariable)
     }
+    fn get_scope(&self) -> Result<HashMap<String, V>> {
+        Ok(self
+            .variables
+            .last()
+            .ok_or(RuntimeError::NoVariableEnvironment)?
+            .clone())
+    }
+    fn add_scope(&mut self, env: Option<HashMap<String, V>>) -> Result<()> {
+        if let Some(e) = env {
+            for (k, v) in e {
+                self.add(k, v)?;
+            }
+        }
+        Ok(())
+    }
     fn add(&mut self, s: String, value: V) -> Result<()> {
         self.variables
             .last_mut()
@@ -105,9 +120,10 @@ impl Interpreter {
 impl Declaration {
     pub fn interpret(&self, vars: &mut Variables) -> Result<()> {
         match self {
-            Declaration::Function(name, params, stmts) => {
-                vars.add(name.to_string(), V::Func(params.to_vec(), stmts.to_vec()))
-            }
+            Declaration::Function(name, params, stmts) => vars.add(
+                name.to_string(),
+                V::Func(params.to_vec(), stmts.to_vec(), None),
+            ),
             Declaration::Statement(stmt) => stmt.interpret(vars),
             Declaration::Import(_) => unreachable!("Imports are handled during parsing"),
         }
@@ -238,12 +254,13 @@ impl Expr {
                             .map(|x| V::Number(x as f64))
                             .collect(),
                     ),
-                    (e1, TK::Arrow, V::Func(param_names, stmts)) => {
+                    (e1, TK::Arrow, V::Func(param_names, stmts, env)) => {
                         if param_names.len() != 1 {
                             panic!("Can only have 1 parameter when chaining functions with '->'");
                         }
                         vars.begin_scope();
                         vars.add(param_names[0].to_string(), e1)?;
+                        vars.add_scope(env)?;
                         for stmt in stmts {
                             stmt.interpret(vars)?;
                             if vars.return_value.is_some() {
@@ -298,10 +315,12 @@ impl Expr {
             Expr::Call(params, expr) => {
                 vars.begin_scope();
                 match expr.interpret(vars)? {
-                    V::Func(param_names, stmts) => {
+                    V::Func(param_names, stmts, env) => {
                         if param_names.len() != params.len() {
                             panic!("wrong amount of parameters")
                         }
+                        vars.add_scope(env)?;
+
                         for (name, param_expr) in std::iter::zip(param_names, params) {
                             let res = param_expr.interpret(vars)?;
                             vars.add(name, res)?;
@@ -358,7 +377,9 @@ impl Expr {
                 resolved[idx] = new_val;
                 V::Null
             }
-            Expr::Function(params, stmts) => V::Func(params.to_vec(), stmts.to_vec()),
+            Expr::Function(params, stmts) => {
+                V::Func(params.to_vec(), stmts.to_vec(), Some(vars.get_scope()?))
+            }
         };
         Ok(res)
     }
@@ -446,7 +467,7 @@ pub enum V {
     Number(f64),
     Bool(bool),
     Obj(HashMap<String, V>),
-    Func(Vec<String>, Vec<Statement>),
+    Func(Vec<String>, Vec<Statement>, Option<HashMap<String, V>>),
     NativeFunc(usize, NativeFunction),
     Null,
     List(Vec<V>),
