@@ -74,6 +74,19 @@ You can use ``+`` to concatenate lists:
     let list3 = list1 + list2; // [1,2,3,4,5,6]
 ```
 
+## Objects
+
+Objects can be declared with any number of comma-separated key/value pairs. And can later be accessed with '.' operator:
+```ts
+    let obj = {
+        key = "value",
+        number = 123,
+        list = [1,2,3],
+    };
+
+    print(obj.key); // prints 'value'
+```
+
 ## Functions
 
 Functions can be declared using the ``fun`` keyword:
