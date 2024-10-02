@@ -24,6 +24,7 @@ impl Scanner {
         let mut res = vec![];
         loop {
             let token = scanner.next_token()?;
+            // println!("token: {:?}", token);
             let kind = token.kind;
             res.push(token);
             match kind {
@@ -187,7 +188,9 @@ impl Scanner {
         loop {
             if let Some(c) = self.peek() {
                 match c {
-                    ' ' | '\r' | '\t' => _ = self.advance(),
+                    ' ' | '\r' | '\t' => {
+                        //self.start+=1;
+                        _ = self.advance()},
                     '\n' => {
                         self.line += 1;
                         self.column = 0;
@@ -248,7 +251,7 @@ impl Scanner {
                 kind,
                 line: self.line,
                 column: self.column,
-                start: self.current - self.start,
+                start: self.column - (self.current - self.start),
                 value: self
                     .source
                     .get((self.start + 1)..(self.current - 1))
@@ -263,7 +266,7 @@ impl Scanner {
                 kind,
                 line: self.line,
                 column: self.column,
-                start: self.current - self.start,
+                start: self.column - (self.current - self.start),
                 value: self
                     .source
                     .get(self.start..self.current)

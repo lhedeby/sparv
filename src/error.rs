@@ -1,13 +1,15 @@
 use std::fmt::Display;
 
-pub fn print_error(e: Error, file_path: &str, source: &str) {
-    let lines = source.lines().collect::<Vec<&str>>();
+use crate::token::TokenKind;
 
+pub fn print_error(e: Error, file_path: &str, source: &str) {
+    let mut lines = source.lines().collect::<Vec<&str>>();
+    lines.push("<End of file>");
     let include_prev_line = e.line > 1;
-    println!("include: {}", include_prev_line);
     let max_len = e.line.to_string().len() + 2;
 
     println!("Error in /{}", file_path);
+    println!("{}|", pad_right("", max_len, ' '));
     if include_prev_line {
         println!(
             "{}| {}",
@@ -25,8 +27,14 @@ pub fn print_error(e: Error, file_path: &str, source: &str) {
         println!(
             "{}| {}{}",
             pad_right(" ", max_len, ' '),
-            " ".repeat(cols.0),
+            " ".repeat(cols.0 - 1),
             "^".repeat(cols.1 - cols.0)
+        );
+        println!();
+        println!(
+            "|>|>{} {}",
+            " ".repeat(cols.0),
+            e
         );
     } else {
         println!(
@@ -34,9 +42,10 @@ pub fn print_error(e: Error, file_path: &str, source: &str) {
             pad_right("", max_len, ' '),
             "^".repeat(lines[e.line - 1].len())
         );
+        println!();
+        println!(">>>  {}", e);
     }
-    println!("{}| ", pad_right("..", max_len, ' '));
-    println!(">>>   {}", e);
+    // println!("{}| ", pad_right("..", max_len, ' '));
 }
 
 fn pad_right(s: &str, max_len: usize, c: char) -> String {
@@ -64,7 +73,18 @@ impl Display for ErrorKind {
             ErrorKind::UnexpectedCharacter => write!(f, "Unexpected character"),
             ErrorKind::UnterminatedString => write!(f, "Unterminated string"),
             ErrorKind::Unknown => write!(f, "An unknown error has occured"),
-            ErrorKind::UnexpectedToken => write!(f, "Unexpected token"),
+            ErrorKind::UnexpectedToken(expected, actual) => {
+                write!(
+                    f,
+                    "Unexpected token '{:?}'{}",
+                    actual,
+                    if expected.is_some() {
+                        format!(", expected '{:?}'", expected.unwrap())
+                    } else {
+                        "".to_string()
+                    }
+                )
+            }
             ErrorKind::Assignment => write!(f, "Invalid assignment"),
             ErrorKind::Import(file_name) => write!(f, "Could not import file: '{file_name}'"),
         }
@@ -74,7 +94,7 @@ impl Display for ErrorKind {
 pub enum ErrorKind {
     UnexpectedCharacter,
     UnterminatedString,
-    UnexpectedToken,
+    UnexpectedToken(Option<TokenKind>, TokenKind),
     Assignment,
     Import(String),
     Unknown,

@@ -1,7 +1,9 @@
 use std::fs;
 
 use crate::{
-    error::{Error, ErrorKind}, scanner::Scanner, token::{Token, TokenKind}
+    error::{Error, ErrorKind},
+    scanner::Scanner,
+    token::{Token, TokenKind},
 };
 
 pub struct Parser {
@@ -73,7 +75,7 @@ impl Parser {
                 _ => {
                     return Err(Error {
                         line: self.get_token().line,
-                        kind: ErrorKind::UnexpectedToken,
+                        kind: ErrorKind::UnexpectedToken(None, self.get_kind()),
                         cols: self.get_cols(),
                     })
                 }
@@ -318,10 +320,10 @@ impl Parser {
                             self.p += 1;
                         }
                         TokenKind::RightParen => break,
-                        _ => {
+                        actual => {
                             return Err(Error {
                                 line: self.get_token().line,
-                                kind: ErrorKind::UnexpectedToken,
+                                kind: ErrorKind::UnexpectedToken(None, actual),
                                 cols: self.get_cols(),
                             })
                         }
@@ -358,9 +360,9 @@ impl Parser {
                 self.consume(TokenKind::RightBrace)?;
                 Ok(Expr::Object(res))
             }
-            _ => Err(Error {
+            actual => Err(Error {
                 line: self.get_token().line,
-                kind: ErrorKind::UnexpectedToken,
+                kind: ErrorKind::UnexpectedToken(None, *actual),
                 cols: self.get_cols(),
             }),
         }
@@ -395,10 +397,11 @@ impl Parser {
     }
 
     fn consume(&mut self, expected_token: TokenKind) -> Result<()> {
-        if expected_token != self.tokens[self.p].kind {
+        let actual = self.tokens[self.p].kind;
+        if expected_token != actual {
             return Err(Error {
-                line: self.get_token().line,
-                kind: ErrorKind::UnexpectedToken,
+                line: self.tokens[self.p].line,
+                kind: ErrorKind::UnexpectedToken(Some(expected_token), actual),
                 cols: self.get_cols(),
             });
         }

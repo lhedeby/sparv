@@ -21,11 +21,11 @@ pub struct Variables {
 }
 
 impl Variables {
-    fn re_assign(&mut self, s: String, value: V) -> Result<()> {
+    fn re_assign(&mut self, s: String, value: V) -> Result<V> {
         for v in &mut self.variables {
             if v.contains_key(&s) {
                 v.insert(s.to_string(), value.clone());
-                return Ok(());
+                return Ok(value);
             }
         }
         Err(RuntimeError::MissingVariable)
@@ -65,6 +65,7 @@ impl Variables {
                     V::NativeFunc(1, NativeFunction::SplitLines),
                 ),
                 ("len".to_string(), V::NativeFunc(1, NativeFunction::Len)),
+                ("parse".to_string(), V::NativeFunc(1, NativeFunction::Parse)),
             ])],
             return_value: None,
         }
@@ -186,7 +187,6 @@ impl Expr {
                     (V::Number(n1), TK::Minus, V::Number(n2)) => V::Number(n1 - n2),
                     (V::Number(n1), TK::Slash, V::Number(n2)) => V::Number(n1 / n2),
                     (V::Number(n1), TK::Star, V::Number(n2)) => V::Number(n1 * n2),
-                    // TODO
                     (V::Number(f1), TK::Percent, V::Number(f2)) => V::Number(f1 % f2),
 
                     /*
@@ -231,11 +231,7 @@ impl Expr {
                     /*
                      *   Reassignment
                      */
-                    (V::String(s), TK::Equal, v) => {
-                        // vars.add(s, v)?;
-                        vars.re_assign(s, v)?;
-                        V::Number(0.0)
-                    }
+                    (V::String(s), TK::Equal, v) => vars.re_assign(s, v)?,
 
                     (V::Number(n1), TK::Colon, V::Number(n2)) => V::List(
                         ((n1 as usize)..(n2 as usize))
@@ -243,7 +239,6 @@ impl Expr {
                             .collect(),
                     ),
                     (e1, TK::Arrow, V::Func(param_names, stmts)) => {
-                        // allow for multiple return values?
                         if param_names.len() != 1 {
                             panic!("Can only have 1 parameter when chaining functions with '->'");
                         }
@@ -262,7 +257,10 @@ impl Expr {
                         V::Null
                     }
                     (e1, TK::Arrow, V::NativeFunc(_, kind)) => exec_native_fn(kind, vec![e1])?,
-                    (a1, a2, a3) => panic!("what is this got: '{:?}', '{:?}', '{:?}'", a1, a2, a3),
+                    (a1, a2, a3) => panic!(
+                        "Unknown operator expression: '{:?}', '{:?}', '{:?}'",
+                        a1, a2, a3
+                    ),
                 }
             }
             Expr::Number(n) => V::Number(*n),
@@ -424,6 +422,13 @@ fn exec_native_fn(kind: NativeFunction, resolved_params: Vec<V>) -> Result<V> {
             V::List(v) => v.len() as f64,
             V::NativeFunc(..) => todo!(),
         })),
+        NativeFunction::Parse => match &resolved_params[0] {
+            V::String(s) => match s.parse() {
+                Ok(v) => Ok(V::Number(v)),
+                Err(_) => Ok(V::Null),
+            },
+            _ => panic!("not a valid arg"),
+        },
     }
 }
 
@@ -456,6 +461,7 @@ pub enum NativeFunction {
     Split,
     SplitLines,
     Append,
+    Parse,
 }
 
 impl Display for V {
