@@ -1,5 +1,6 @@
 use crate::{
-    error::{Error, ErrorKind}, token::{Token, TokenKind}
+    error::{Error, ErrorKind, Result},
+    token::{Token, TokenKind},
 };
 
 pub struct Scanner {
@@ -9,8 +10,6 @@ pub struct Scanner {
     column: usize,
     source: String,
 }
-
-type Result<T> = std::result::Result<T, Error>;
 
 impl Scanner {
     pub fn get_tokens(source: String) -> Result<Vec<Token>> {
@@ -158,7 +157,9 @@ impl Scanner {
     }
 
     fn number(&mut self) -> Result<Token> {
-        while self.peek().is_some() && self.peek().unwrap().is_digit(10) {
+        while self.peek().is_some()
+            && (self.peek().unwrap().is_digit(10) || self.peek().unwrap().eq(&'.'))
+        {
             self.advance();
         }
         self.make_token(TokenKind::Number)
@@ -190,7 +191,8 @@ impl Scanner {
                 match c {
                     ' ' | '\r' | '\t' => {
                         //self.start+=1;
-                        _ = self.advance()},
+                        _ = self.advance()
+                    }
                     '\n' => {
                         self.line += 1;
                         self.column = 0;
