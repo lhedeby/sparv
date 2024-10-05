@@ -1,7 +1,7 @@
 use std::fs;
 
 use crate::{
-    error::{Error, ErrorKind},
+    error::{Error, ErrorKind, Result},
     scanner::Scanner,
     token::{Token, TokenKind},
 };
@@ -10,8 +10,6 @@ pub struct Parser {
     p: usize,
     tokens: Vec<Token>,
 }
-
-type Result<T> = std::result::Result<T, Error>;
 
 impl Parser {
     pub fn parse(tokens: Vec<Token>) -> Result<Vec<Declaration>> {

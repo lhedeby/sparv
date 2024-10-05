@@ -2,6 +2,8 @@ use std::fmt::Display;
 
 use crate::token::TokenKind;
 
+pub type Result<T> = std::result::Result<T, Error>;
+
 pub fn print_error(e: Error, file_path: &str, source: &str) {
     let mut lines = source.lines().collect::<Vec<&str>>();
     lines.push("<End of file>");
@@ -31,11 +33,7 @@ pub fn print_error(e: Error, file_path: &str, source: &str) {
             "^".repeat(cols.1 - cols.0)
         );
         println!();
-        println!(
-            "|>|>{} {}",
-            " ".repeat(cols.0),
-            e
-        );
+        println!("|>|>{} {}", " ".repeat(cols.0), e);
     } else {
         println!(
             "{}| {}",
@@ -87,6 +85,7 @@ impl Display for ErrorKind {
             }
             ErrorKind::Assignment => write!(f, "Invalid assignment"),
             ErrorKind::Import(file_name) => write!(f, "Could not import file: '{file_name}'"),
+            ErrorKind::InterpreterError => write!(f, "Interpreter error"),
         }
     }
 }
@@ -98,4 +97,5 @@ pub enum ErrorKind {
     Assignment,
     Import(String),
     Unknown,
+    InterpreterError,
 }
