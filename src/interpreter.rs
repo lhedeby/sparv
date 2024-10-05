@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::Display;
-use std::io::{self};
+use std::io::{self, Write};
 
 use crate::parser::{Declaration, Expr, Statement};
 use crate::token::TokenKind as TK;
@@ -68,7 +68,7 @@ impl Variables {
                 ),
                 (
                     "read_input".to_string(),
-                    V::NativeFunc(0, NativeFunction::ReadInput),
+                    V::NativeFunc(1, NativeFunction::ReadInput),
                 ),
                 (
                     "append".to_string(),
@@ -408,7 +408,9 @@ fn exec_native_fn(kind: NativeFunction, resolved_params: Vec<V>) -> Result<V> {
             }
         }
         NativeFunction::ReadInput => {
-            println!("input prompt: ");
+            print!("{}", resolved_params[0]);
+            io::stdout().flush().expect("Should not happend");
+            
             let mut buffer = String::new();
             match io::stdin().read_line(&mut buffer) {
                 Ok(_) => Ok(V::String(buffer)),
