@@ -1,0 +1,9 @@
+typeof(true)->print; // expected: <bool>
+typeof(false)->print; // expected: <bool>
+typeof(1 + 2)->print; // expected: <number>
+typeof("hello")->print; // expected: <str>
+typeof(fun(a, b) a*b)->print; // expected: <function>
+typeof(typeof)->print; // expected: <function>
+typeof({})->print; // expected: <object>
+typeof(null)->print; // expected: <null>
+typeof([])->print; // expected: <list>

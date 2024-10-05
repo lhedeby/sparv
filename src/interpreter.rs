@@ -81,6 +81,7 @@ impl Variables {
                 ),
                 ("len".to_string(), V::NativeFunc(1, NativeFunction::Len)),
                 ("parse".to_string(), V::NativeFunc(1, NativeFunction::Parse)),
+                ("typeof".to_string(), V::NativeFunc(1, NativeFunction::Typeof))
             ])],
             return_value: None,
         }
@@ -450,6 +451,18 @@ fn exec_native_fn(kind: NativeFunction, resolved_params: Vec<V>) -> Result<V> {
             },
             _ => panic!("not a valid arg"),
         },
+        NativeFunction::Typeof => {
+            match &resolved_params[0] {
+                V::String(_) => Ok(V::String("<str>".to_string())),
+                V::Number(_) => Ok(V::String("<number>".to_string())),
+                V::Bool(_) => Ok(V::String("<bool>".to_string())),
+                V::Obj(_) => Ok(V::String("<object>".to_string())),
+                V::Func(_, _, _) => Ok(V::String("<function>".to_string())),
+                V::NativeFunc(_, _) => Ok(V::String("<function>".to_string())),
+                V::Null => Ok(V::String("<null>".to_string())),
+                V::List(_) => Ok(V::String("<list>".to_string())),
+            }
+        }
     }
 }
 
@@ -483,6 +496,7 @@ pub enum NativeFunction {
     SplitLines,
     Append,
     Parse,
+    Typeof,
 }
 
 impl Display for V {
