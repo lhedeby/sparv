@@ -152,3 +152,21 @@ The native function print conveniently returns the printed value. So you can kee
         print; // prints '16'
 
 ```
+The arrow operator can only pass 1 parameter to the next function. But sometimes you want
+a function that takes more arguments. [Currying](https://en.wikipedia.org/wiki/Currying#) to the rescue!
+(Sadly not called [Schönfinkelisation](https://en.wikipedia.org/wiki/Moses_Sch%C3%B6nfinkel))
+```ts
+    fun add(x) { // add returns a new function that uses 'x' in its evaluation
+        return fun(list) {
+            for i in 0:len(list) {
+                list[i] = list[i] + x; // add 'x' to all elements
+            }
+            return list; // returns the list with all the elements incremented with 'x'
+        };
+    }
+
+    [1,2,3]->
+        add(3)-> // call to 'add' and passes 3 as the 'x' param. This then returns the inner function of add.
+                // Which is the function that gets called with the list as the parameter.
+        print; // prints '[4, 5, 6]'
+```
