@@ -337,7 +337,7 @@ impl Parser {
                         self.consume(TokenKind::RightBrace)?;
                     }
                     _ => {
-                        stmts.push(self.parse_stmt()?);
+                        stmts.push(Statement::Return(self.parse_expr(0)?));
                     }
                 }
 

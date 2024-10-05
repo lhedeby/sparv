@@ -14,4 +14,4 @@ fun f3(f, p) {
 f1(2, 5); // expected: 7
 f1("a", "b"); // expected: ab
 f2("c"); // expected: cc
-print(f3(fun(a) return a * a;, 5)); // expected: 25
+print(f3(fun(a) a * a, 5)); // expected: 25
