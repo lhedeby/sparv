@@ -1,0 +1,11 @@
+print(1 + 2); // expected: 3
+print(1 - 2); // expected: -1
+print(9 / 3); // expected: 3
+print(9 % 3); // expected: 0
+print(9 * 3); // expected: 27
+print(1.1); // expected: 1.1
+print(1 / 2); // expected: 0.5
+print(1 + 2 * 3); // expected: 7
+print((1 + 2) * 3); // expected: 9
+print(100 / 2 * 5); // expected: 250
+print(100 / (2 * 5)); // expected: 10

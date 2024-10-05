@@ -1,0 +1,11 @@
+if true {
+    print("a"); // expected: a
+} else {
+    print("b"); // not expected
+}
+
+if false {
+    print("c"); // not expected
+} else {
+    print("d"); // expected: d
+}

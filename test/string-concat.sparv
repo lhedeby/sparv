@@ -1,0 +1,11 @@
+let s1 = "foo";
+let s2 = "bar";
+
+print(s1 + s2); // expected: foobar
+
+// string concat with different type
+print(s1 + 1); // expected: foo1
+print(s1 + true); // expected: footrue
+print(s1 + 1.9); // expected: foo1.9
+print(s1 + null); // expected: foonull
+
