@@ -2,22 +2,31 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::io::{self, Write};
 
+use crate::error::Error;
 use crate::parser::{Declaration, Expr, Statement};
 use crate::token::TokenKind as TK;
 
-#[derive(Debug)]
-pub enum RuntimeError {
-    MissingVariable,
-    NoVariableEnvironment,
-    _UnexpectedType,
-}
+// #[derive(Debug)]
+// pub enum RuntimeError {
+//     MissingVariable,
+//     NoVariableEnvironment,
+//     _UnexpectedType,
+// }
 
-type Result<T> = std::result::Result<T, RuntimeError>;
+type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub struct Variables {
     variables: Vec<HashMap<String, V>>,
     return_value: Option<V>,
+}
+
+fn gen_err(s: String) -> Error {
+    Error {
+        line: 0,
+        kind: crate::error::ErrorKind::Runtime(s),
+        cols: None,
+    }
 }
 
 impl Variables {
@@ -28,13 +37,13 @@ impl Variables {
                 return Ok(value);
             }
         }
-        Err(RuntimeError::MissingVariable)
+        Err(gen_err(format!("Could not find variable: {s}")))
     }
     fn get_scope(&self) -> Result<HashMap<String, V>> {
         Ok(self
             .variables
             .last()
-            .ok_or(RuntimeError::NoVariableEnvironment)?
+            .ok_or(gen_err(format!("Found no Variable Environment")))?
             .clone())
     }
     fn add_scope(&mut self, env: Option<HashMap<String, V>>) -> Result<()> {
@@ -48,7 +57,7 @@ impl Variables {
     fn add(&mut self, s: String, value: V) -> Result<()> {
         self.variables
             .last_mut()
-            .ok_or(RuntimeError::NoVariableEnvironment)?
+            .ok_or(gen_err(format!("Found no Variable Environment")))?
             .insert(s, value);
         Ok(())
     }
@@ -99,7 +108,7 @@ impl Variables {
                 return Ok(res);
             }
         }
-        Err(RuntimeError::MissingVariable)
+        Err(gen_err(format!("Could not find variable '{}'", name)))
     }
     fn get_mut(&mut self, name: &str) -> Result<&mut V> {
         for v in self.variables.iter_mut().rev() {
@@ -107,7 +116,7 @@ impl Variables {
                 return Ok(res);
             }
         }
-        Err(RuntimeError::MissingVariable)
+        Err(gen_err(format!("Could not find variable '{}'", name)))
     }
 }
 
@@ -264,7 +273,9 @@ impl Expr {
                     ),
                     (e1, TK::Arrow, V::Func(param_names, stmts, env)) => {
                         if param_names.len() != 1 {
-                            panic!("Can only have 1 parameter when chaining functions with '->'");
+                            return Err(gen_err(format!(
+                                "Function can only have 1 parameter when chaining with '->'"
+                            )));
                         }
                         vars.begin_scope();
                         vars.add(param_names[0].to_string(), e1)?;
@@ -325,7 +336,11 @@ impl Expr {
                 match expr.interpret(vars)? {
                     V::Func(param_names, stmts, env) => {
                         if param_names.len() != params.len() {
-                            panic!("wrong amount of parameters")
+                            return Err(gen_err(format!(
+                                "Trying to call a function with {} parameters with {} paramaters",
+                                param_names.len(),
+                                params.len()
+                            )));
                         }
                         vars.add_scope(env)?;
 
@@ -348,8 +363,10 @@ impl Expr {
                         if params.len() != arity {
                             panic!("wrong amount of parameters");
                         }
-                        let resolved_params: Vec<V> =
-                            params.iter().map(|x| x.interpret(vars).unwrap()).collect();
+                        let resolved_params: Vec<V> = params
+                            .iter()
+                            .map(|x| x.interpret(vars))
+                            .collect::<Result<Vec<V>>>()?;
                         // TODO: naming
                         let res = exec_native_fn(native_fn, resolved_params);
                         vars.end_scope();
@@ -361,9 +378,12 @@ impl Expr {
 
                 V::Null
             }
-            Expr::List(items) => {
-                V::List(items.iter().map(|x| x.interpret(vars).unwrap()).collect())
-            }
+            Expr::List(items) => V::List(
+                items
+                    .iter()
+                    .map(|x| x.interpret(vars))
+                    .collect::<Result<Vec<V>>>()?,
+            ),
             Expr::Index(list, index) => match list.interpret(vars)? {
                 V::List(items) => items
                     .get(index.interpret(vars)?.as_num() as usize)
@@ -410,7 +430,7 @@ fn exec_native_fn(kind: NativeFunction, resolved_params: Vec<V>) -> Result<V> {
         NativeFunction::ReadInput => {
             print!("{}", resolved_params[0]);
             io::stdout().flush().expect("Should not happend");
-            
+
             let mut buffer = String::new();
             match io::stdin().read_line(&mut buffer) {
                 Ok(_) => Ok(V::String(buffer)),

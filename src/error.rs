@@ -85,7 +85,7 @@ impl Display for ErrorKind {
             }
             ErrorKind::Assignment => write!(f, "Invalid assignment"),
             ErrorKind::Import(file_name) => write!(f, "Could not import file: '{file_name}'"),
-            ErrorKind::InterpreterError => write!(f, "Interpreter error"),
+            ErrorKind::Runtime(s) => write!(f, "Runtime error: {}", s),
         }
     }
 }
@@ -97,5 +97,5 @@ pub enum ErrorKind {
     Assignment,
     Import(String),
     Unknown,
-    InterpreterError,
+    Runtime(String),
 }

@@ -42,7 +42,7 @@ pub fn run_file(file_path: &str) {
             match Interpreter::interpret(tree) {
                 Ok(_) => println!("successfully ran program"),
                 Err(e) => {
-                    println!("Runtime Error - {:?}", e);
+                    println!("{}", e);
                 }
             }
         }
