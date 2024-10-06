@@ -441,12 +441,12 @@ fn infix_precedence(kind: &TokenKind) -> usize {
         TokenKind::Greater | TokenKind::GreaterEqual | TokenKind::Less | TokenKind::LessEqual => 6,
         TokenKind::Plus | TokenKind::Minus => 7,
         TokenKind::Star | TokenKind::Slash | TokenKind::Percent => 8,
-        TokenKind::Dot | TokenKind::Colon => 9,
+        TokenKind::Dot | TokenKind::Colon => 10,
         _ => 0,
     }
 }
 fn prefix_precedence(_kind: &TokenKind) -> usize {
-    8
+    9
 }
 
 #[allow(dead_code)]
