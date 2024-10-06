@@ -170,3 +170,9 @@ a function that takes more arguments. [Currying](https://en.wikipedia.org/wiki/C
                 // Which is the function that gets called with the list as the parameter.
         print; // prints '[4, 5, 6]'
 ```
+You can also inline functions with arrows:
+```ts
+    2->fun(x) x * 5->print; // prints: 10
+```
+
+These are the basics for sparv. Next step is to get familiar with the [native functions](https://github.com/lhedeby/sparv/blob/main/docs/native-functions.md).
