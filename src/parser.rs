@@ -99,6 +99,14 @@ impl Parser {
     fn import(&mut self) -> Result<Declaration> {
         self.p += 1;
         let path = self.tokens[self.p].value.to_string();
+        
+        if path.split('.').last().unwrap() != "sparv" {
+            return Err(Error {
+                line: self.get_token().line,
+                kind: ErrorKind::Import(path),
+                cols: self.get_cols()
+            });
+        }
         match fs::read_to_string(path.to_string()) {
             Ok(source) => {
                 let tokens = Scanner::get_tokens(source)?;

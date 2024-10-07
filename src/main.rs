@@ -19,6 +19,10 @@ fn main() {
 }
 
 pub fn run_file(file_path: &str) {
+    if file_path.split('.').last().unwrap() != "sparv" {
+        println!("'{}' is not a .sparv file", file_path);
+        std::process::exit(1)
+    }
     match fs::read_to_string(file_path) {
         Ok(source) => {
 
