@@ -1,0 +1,10 @@
+import "./test/functions.sparv";
+
+// functions ran in imported file
+// expected: 7
+// expected: ab
+// expected: cc
+// expected: 25
+
+// calling function from import
+f1(1, 2); // expected: 3
