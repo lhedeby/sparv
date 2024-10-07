@@ -265,6 +265,20 @@ impl Expr {
                      *   Reassignment
                      */
                     (V::String(s), TK::Equal, v) => vars.re_assign(s, v)?,
+                    (V::String(s), TK::PlusEqual, v) => {
+                        let new_value = match vars.get(&s)? {
+                            V::String(ss) => V::String(format!("{}{}", ss, v.as_string())),
+                            V::Number(n) => V::Number(n + v.as_num()),
+                            V::Bool(_) => return Err(gen_err(format!("Cant concatenate bool {s}"))),
+                            V::Obj(_) => return Err(gen_err(format!("Cant concatenate object {s}"))),
+                            V::Func(_, _, _) => return Err(gen_err(format!("Cant concatenate function {s}"))),
+                            V::NativeFunc(_, _) => return Err(gen_err(format!("Cant concatenate function {s}"))),
+                            V::Null => return Err(gen_err(format!("Cant concatenate null {s}"))),
+                            V::List(l) => V::List([l.clone(), v.as_list()].concat()),
+                        };
+                        vars.re_assign(s, new_value)?
+                    },
+
 
                     (V::Number(n1), TK::Colon, V::Number(n2)) => V::List(
                         ((n1 as usize)..(n2 as usize))

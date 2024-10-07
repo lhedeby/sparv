@@ -66,7 +66,14 @@ impl Scanner {
                 };
                 return self.make_token(token);
             }
-            '+' => return self.make_token(TokenKind::Plus),
+            '+' => {
+                let token = if self.check_next('=') {
+                    TokenKind::PlusEqual
+                } else {
+                    TokenKind::Plus
+                };
+                return self.make_token(token);
+            }
             '/' => return self.make_token(TokenKind::Slash),
             '*' => return self.make_token(TokenKind::Star),
             ':' => return self.make_token(TokenKind::Colon),
