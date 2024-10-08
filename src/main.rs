@@ -35,7 +35,7 @@ pub fn run_file(file_path: &str) {
                     return;
                 }
             };
-            let tree = match Parser::parse(tokens) {
+            let tree = match Parser::parse(tokens, file_path) {
                 Ok(res) => res,
                 Err(e) => {
                     println!("Parsing Error");

@@ -1,4 +1,4 @@
-import "./test/functions.sparv";
+import "/functions.sparv";
 
 // functions ran in imported file
 // expected: 7

@@ -6,14 +6,15 @@ use crate::{
     token::{Token, TokenKind},
 };
 
-pub struct Parser {
+pub struct Parser<'a> {
     p: usize,
     tokens: Vec<Token>,
+    root: &'a str,
 }
 
-impl Parser {
-    pub fn parse(tokens: Vec<Token>) -> Result<Vec<Declaration>> {
-        let mut parser = Parser { p: 0, tokens };
+impl Parser<'_> {
+    pub fn parse<'a>(tokens: Vec<Token>, root: &'a str) -> Result<Vec<Declaration>> {
+        let mut parser = Parser { p: 0, tokens, root };
         let mut decls: Vec<Declaration> = vec![];
         while parser.tokens[parser.p].kind != TokenKind::Eof {
             let decl = parser.parse_decl()?;
@@ -99,18 +100,27 @@ impl Parser {
     fn import(&mut self) -> Result<Declaration> {
         self.p += 1;
         let path = self.tokens[self.p].value.to_string();
-        
+
         if path.split('.').last().unwrap() != "sparv" {
             return Err(Error {
                 line: self.get_token().line,
                 kind: ErrorKind::Import(path),
-                cols: self.get_cols()
+                cols: self.get_cols(),
             });
         }
-        match fs::read_to_string(path.to_string()) {
+        let root_path = std::path::Path::new(self.root);
+        let new_path = root_path
+            .parent()
+            .expect("Should fail before if the path is not valid")
+            .to_str()
+            .unwrap_or("")
+            .to_string()
+            + &path;
+
+        match fs::read_to_string(new_path.clone()) {
             Ok(source) => {
                 let tokens = Scanner::get_tokens(source)?;
-                let tree = Parser::parse(tokens)?;
+                let tree = Parser::parse(tokens, &new_path)?;
                 Ok(Declaration::Import(tree))
             }
             Err(_) => Err(Error {
