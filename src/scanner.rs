@@ -1,3 +1,5 @@
+use std::{f32::DIGITS, str::FromStr};
+
 use crate::{
     error::{Error, ErrorKind, Result},
     token::{Token, TokenKind},
@@ -42,29 +44,26 @@ impl Scanner {
         }
 
         let c = self.advance().unwrap();
-        if c.is_ascii_alphabetic() {
-            return self.identifier();
-        }
-        if c.is_digit(10) {
-            return self.number();
-        }
+
         match c {
-            '(' => return self.make_token(TokenKind::LeftParen),
-            ')' => return self.make_token(TokenKind::RightParen),
-            '[' => return self.make_token(TokenKind::LeftBracket),
-            ']' => return self.make_token(TokenKind::RightBracket),
-            '{' => return self.make_token(TokenKind::LeftBrace),
-            '}' => return self.make_token(TokenKind::RightBrace),
-            ';' => return self.make_token(TokenKind::Semicolon),
-            ',' => return self.make_token(TokenKind::Comma),
-            '.' => return self.make_token(TokenKind::Dot),
+            'a'..='z' | 'A'..='Z' => self.identifier(),
+            '0'..='9' => self.number(),
+            '(' => self.make_token(TokenKind::LeftParen),
+            ')' => self.make_token(TokenKind::RightParen),
+            '[' => self.make_token(TokenKind::LeftBracket),
+            ']' => self.make_token(TokenKind::RightBracket),
+            '{' => self.make_token(TokenKind::LeftBrace),
+            '}' => self.make_token(TokenKind::RightBrace),
+            ';' => self.make_token(TokenKind::Semicolon),
+            ',' => self.make_token(TokenKind::Comma),
+            '.' => self.make_token(TokenKind::Dot),
             '-' => {
                 let token = if self.check_next('>') {
                     TokenKind::Arrow
                 } else {
                     TokenKind::Minus
                 };
-                return self.make_token(token);
+                self.make_token(token)
             }
             '+' => {
                 let token = if self.check_next('=') {
@@ -72,19 +71,19 @@ impl Scanner {
                 } else {
                     TokenKind::Plus
                 };
-                return self.make_token(token);
+                self.make_token(token)
             }
-            '/' => return self.make_token(TokenKind::Slash),
-            '*' => return self.make_token(TokenKind::Star),
-            ':' => return self.make_token(TokenKind::Colon),
-            '%' => return self.make_token(TokenKind::Percent),
+            '/' => self.make_token(TokenKind::Slash),
+            '*' => self.make_token(TokenKind::Star),
+            ':' => self.make_token(TokenKind::Colon),
+            '%' => self.make_token(TokenKind::Percent),
             '!' => {
                 let token = if self.check_next('=') {
                     TokenKind::BangEqual
                 } else {
                     TokenKind::Bang
                 };
-                return self.make_token(token);
+                self.make_token(token)
             }
             '=' => {
                 let token = if self.check_next('=') {
@@ -92,7 +91,7 @@ impl Scanner {
                 } else {
                     TokenKind::Equal
                 };
-                return self.make_token(token);
+                self.make_token(token)
             }
             '<' => {
                 let token = if self.check_next('=') {
@@ -100,7 +99,7 @@ impl Scanner {
                 } else {
                     TokenKind::Less
                 };
-                return self.make_token(token);
+                self.make_token(token)
             }
             '>' => {
                 let token = if self.check_next('=') {
@@ -108,19 +107,15 @@ impl Scanner {
                 } else {
                     TokenKind::Greater
                 };
-                return self.make_token(token);
+                self.make_token(token)
             }
-            '"' => return self.string(),
-            _ => {}
+            '"' => self.string(),
+            _ => Err(Error {
+                line: self.line,
+                kind: ErrorKind::UnexpectedCharacter,
+                cols: Some((self.start, self.current)),
+            }),
         }
-
-        // Unexpected character
-        Err(Error {
-            line: self.line,
-            kind: ErrorKind::UnexpectedCharacter,
-            cols: Some((self.start, self.current)),
-        })
-        // Err(LexingError::UnexpectedCharacter(self.line, self.column, c))
     }
 
     fn identifier(&mut self) -> Result<Token> {
@@ -133,34 +128,11 @@ impl Scanner {
         self.make_token(self.identifier_kind())
     }
 
-    fn identifier_list(&self) -> Vec<(String, TokenKind)> {
-        vec![
-            ("let".to_string(), TokenKind::Let),
-            ("true".to_string(), TokenKind::True),
-            ("and".to_string(), TokenKind::And),
-            ("else".to_string(), TokenKind::Else),
-            ("if".to_string(), TokenKind::If),
-            ("null".to_string(), TokenKind::Null),
-            ("or".to_string(), TokenKind::Or),
-            ("return".to_string(), TokenKind::Return),
-            ("while".to_string(), TokenKind::While),
-            ("false".to_string(), TokenKind::False),
-            ("for".to_string(), TokenKind::For),
-            ("fun".to_string(), TokenKind::Fun),
-            ("in".to_string(), TokenKind::In),
-            ("import".to_string(), TokenKind::Import),
-        ]
-    }
-
     fn identifier_kind(&self) -> TokenKind {
-        for (s, kind) in self.identifier_list() {
-            if self.start + s.len() < self.source.len()
-                && &self.source[self.start..self.current] == &s
-            {
-                return kind;
-            }
+        match TokenKind::from_str(&self.source[self.start..self.current]) {
+            Ok(kind) => kind,
+            Err(_) => TokenKind::Identifier,
         }
-        TokenKind::Identifier
     }
 
     fn number(&mut self) -> Result<Token> {
@@ -255,44 +227,28 @@ impl Scanner {
     }
 
     fn make_token(&self, kind: TokenKind) -> Result<Token> {
-        match kind {
-            TokenKind::String => Ok(Token {
-                kind,
-                line: self.line,
-                column: self.column,
-                start: self.column - (self.current - self.start),
-                value: self
-                    .source
-                    .get((self.start + 1)..(self.current - 1))
-                    .ok_or(Error {
-                        line: self.line,
-                        kind: ErrorKind::Unknown,
-                        cols: Some((self.start, self.current)),
-                    })?
-                    .to_string(),
-            }),
-            _ => Ok(Token {
-                kind,
-                line: self.line,
-                column: self.column,
-                start: self.column - (self.current - self.start),
-                value: self
-                    .source
-                    .get(self.start..self.current)
-                    .ok_or(Error {
-                        line: self.line,
-                        kind: ErrorKind::Unknown,
-                        cols: Some((self.start, self.current)),
-                    })?
-                    .to_string(),
-            }),
-        }
+        let value_range = match kind {
+            TokenKind::String => (self.start + 1)..(self.current - 1),
+            _ => self.start..self.current,
+        };
+        Ok(Token {
+            kind,
+            line: self.line,
+            column: self.column,
+            start: self.column - (self.current - self.start),
+            value: self
+                .source
+                .get(value_range)
+                .ok_or(Error {
+                    line: self.line,
+                    kind: ErrorKind::Unknown,
+                    cols: Some((self.start, self.current)),
+                })?
+                .to_string(),
+        })
     }
 
     fn is_at_end(&self) -> bool {
         self.current >= self.source.len()
     }
 }
-
-#[cfg(test)]
-mod tests {}

@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct Token {
     pub kind: TokenKind,
@@ -56,4 +58,30 @@ pub enum TokenKind {
     While,
     Import,
     Eof,
+}
+
+pub struct ParseTokenKindError;
+
+impl FromStr for TokenKind {
+    type Err = ParseTokenKindError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "let" => Ok(TokenKind::Let),
+            "true" => Ok(TokenKind::True),
+            "and" => Ok(TokenKind::And),
+            "else" => Ok(TokenKind::Else),
+            "if" => Ok(TokenKind::If),
+            "null" => Ok(TokenKind::Null),
+            "or" => Ok(TokenKind::Or),
+            "return" => Ok(TokenKind::Return),
+            "while" => Ok(TokenKind::While),
+            "false" => Ok(TokenKind::False),
+            "for" => Ok(TokenKind::For),
+            "fun" => Ok(TokenKind::Fun),
+            "in" => Ok(TokenKind::In),
+            "import" => Ok(TokenKind::Import),
+            _ => Err(ParseTokenKindError),
+        }
+    }
 }
