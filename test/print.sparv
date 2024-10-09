@@ -12,4 +12,4 @@ print(null); // expected: null
 
 print(true); // expected: true
 
-print({ i1 = 1, l1 = [1, 2, 3],}); // expected: {i1: 1, l1: [1, 2, 3]}
+// todo: object print

@@ -105,9 +105,9 @@ Functions can be declared using the ``fun`` keyword:
 
     let result = square(2); // = 4
 ```
-If they only have 1 line of code no function body is needed. Also they're first class, meaning they are treated like any other variable:
+If they only have 1 line of code no function body is needed. Just 1 line with an expression, no need for the ```return``` keyword either. Also they're first class, meaning they are treated like any other variable:
 ```ts
-    fun square(number) return number * number;
+    fun square(number) number * number;
 
     // they can also be assigned to a variable directly
     let map = fun(list, fn) {
@@ -122,11 +122,20 @@ If they only have 1 line of code no function body is needed. Also they're first 
     let res = map([1,2,3], square); // = [1, 4, 9]
 ```
 
+You have seen the 2 ways of delcaring functions and there are some slight differences.
+The biggest difference is that the function declaration hoists the function. Allowing you to use the function before its been
+declared:
+
+```ts
+    f1();
+    fun f1() { }
+```
+
 Fucntions can also be chained with the ``->`` operator. It passes the value of the evaluated expression to the next function:
 ```ts
     // these 2 function will always be defined in the following 'function' examples
-    fun square(number) return number * number;
-    fun double(number) return number + number;
+    fun square(number) number * number;
+    fun double(number) number + number;
 
     1->double; // == double(1);
     1->double->square; // == square(double(1));

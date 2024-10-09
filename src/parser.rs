@@ -90,7 +90,8 @@ impl Parser<'_> {
                 self.consume(TokenKind::RightBrace)?;
             }
             _ => {
-                stmts.push(self.parse_stmt()?);
+                stmts.push(Statement::Return(self.parse_expr(0)?));
+                self.consume(TokenKind::Semicolon)?;
             }
         }
 
