@@ -179,6 +179,13 @@ impl Scanner {
                         self.column = 0;
                         self.advance();
                     }
+                    '#' => {
+                        self.advance();
+                        while self.peek().is_some() && self.peek().unwrap() != '#' {
+                            self.advance();
+                        }
+                        self.advance();
+                    }
                     '/' => {
                         if self.peek_next().is_some() && self.peek_next().unwrap() == '/' {
                             while self.peek().is_some()
