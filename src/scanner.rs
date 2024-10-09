@@ -1,4 +1,4 @@
-use std::{f32::DIGITS, str::FromStr};
+use std::str::FromStr;
 
 use crate::{
     error::{Error, ErrorKind, Result},
@@ -60,6 +60,8 @@ impl Scanner {
             '-' => {
                 let token = if self.check_next('>') {
                     TokenKind::Arrow
+                } else if self.check_next('=') {
+                    TokenKind::MinusEqual
                 } else {
                     TokenKind::Minus
                 };

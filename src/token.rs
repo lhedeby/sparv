@@ -38,6 +38,7 @@ pub enum TokenKind {
     LessEqual,
     Arrow,
     PlusEqual,
+    MinusEqual,
     // Literals.
     Identifier,
     String,

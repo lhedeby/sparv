@@ -388,7 +388,7 @@ impl Parser<'_> {
         let right = self.parse_expr(infix_precedence(&token_kind))?;
 
         match token_kind {
-            TokenKind::Equal | TokenKind::PlusEqual => match expr {
+            TokenKind::Equal | TokenKind::PlusEqual | TokenKind::MinusEqual => match expr {
                 Expr::Variable(s) => Ok(Expr::Operator(
                     Box::new(Expr::String(s.to_string())),
                     token_kind,
@@ -451,7 +451,7 @@ impl Parser<'_> {
 
 fn infix_precedence(kind: &TokenKind) -> usize {
     match kind {
-        TokenKind::Equal | TokenKind::PlusEqual => 1,
+        TokenKind::Equal | TokenKind::PlusEqual | TokenKind::MinusEqual => 1,
         TokenKind::Arrow => 2,
         TokenKind::Or => 3,
         TokenKind::And => 4,

@@ -269,16 +269,34 @@ impl Expr {
                         let new_value = match vars.get(&s)? {
                             V::String(ss) => V::String(format!("{}{}", ss, v.as_string())),
                             V::Number(n) => V::Number(n + v.as_num()),
-                            V::Bool(_) => return Err(gen_err(format!("Cant concatenate bool {s}"))),
-                            V::Obj(_) => return Err(gen_err(format!("Cant concatenate object {s}"))),
-                            V::Func(_, _, _) => return Err(gen_err(format!("Cant concatenate function {s}"))),
-                            V::NativeFunc(_, _) => return Err(gen_err(format!("Cant concatenate function {s}"))),
+                            V::Bool(_) => {
+                                return Err(gen_err(format!("Cant concatenate bool {s}")))
+                            }
+                            V::Obj(_) => {
+                                return Err(gen_err(format!("Cant concatenate object {s}")))
+                            }
+                            V::Func(_, _, _) => {
+                                return Err(gen_err(format!("Cant concatenate function {s}")))
+                            }
+                            V::NativeFunc(_, _) => {
+                                return Err(gen_err(format!("Cant concatenate function {s}")))
+                            }
                             V::Null => return Err(gen_err(format!("Cant concatenate null {s}"))),
                             V::List(l) => V::List([l.clone(), v.as_list()].concat()),
                         };
                         vars.re_assign(s, new_value)?
-                    },
-
+                    }
+                    (V::String(s), TK::MinusEqual, v) => {
+                        let new_value = match vars.get(&s)? {
+                            V::Number(n) => V::Number(n - v.as_num()),
+                            _ => {
+                                return Err(gen_err(format!(
+                                    "Only numbers can be used with the '-=' operator"
+                                )))
+                            }
+                        };
+                        vars.re_assign(s, new_value)?
+                    }
 
                     (V::Number(n1), TK::Colon, V::Number(n2)) => V::List(
                         ((n1 as usize)..(n2 as usize))
@@ -557,13 +575,14 @@ impl Display for V {
             V::String(s) => write!(f, "{}", s),
             V::Number(n) => write!(f, "{}", n),
             V::Bool(b) => write!(f, "{}", b),
-            V::Obj(o) => {
-                // TODO: better readability
-                for (k, v) in o {
-                    writeln!(f, "{}: {}", k, v)?
-                }
-                Ok(())
-            }
+            V::Obj(o) => write!(
+                f,
+                "{{{}}}",
+                o.iter()
+                    .map(|kvp| format!("{}: {}", kvp.0, kvp.1))
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            ),
             V::Func(..) => write!(f, "<function>"),
             V::Null => write!(f, "null"),
             V::List(items) => {
