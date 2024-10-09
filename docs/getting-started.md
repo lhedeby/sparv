@@ -27,11 +27,19 @@ Sparv is dynamically typed so you are allowed to reassign a variable to another 
 ```
 ## Comments
 
-The only supported comments are ``//`` and the last untill the end of the line:
+There are 2 different kind of comments. Single line comments starts with ```//``` and last until the end of the line.
+Block comments starts and end with ```#``` and everything inside the block is a comment that will be ignore by the
+parser:
 ```ts
     // This is a comment on the whole line
     print("This is not a comment"); // you can also end lines with comments
     // They will be ignored by the interpreter
+
+    #
+        This is a block comment.
+        It works across multiple
+        lines!
+    #
 ```
 
 ## Control flow
