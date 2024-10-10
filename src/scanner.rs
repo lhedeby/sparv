@@ -226,6 +226,7 @@ impl Scanner {
             return false;
         }
         self.current += 1;
+        self.column += 1;
         true
     }
 
