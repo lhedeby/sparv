@@ -1,15 +1,14 @@
 use std::str::FromStr;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
     pub line: usize,
     pub start: usize,
     pub column: usize,
-    pub value: String,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
     // Single-character tokens.
     LeftParen,
@@ -40,9 +39,9 @@ pub enum TokenKind {
     PlusEqual,
     MinusEqual,
     // Literals.
-    Identifier,
-    String,
-    Number,
+    Identifier(String),
+    String(String),
+    Number(f64),
     // Keywords.
     Let,
     And,

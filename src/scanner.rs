@@ -26,7 +26,7 @@ impl Scanner {
         loop {
             let token = scanner.next_token()?;
             // println!("token: {:?}", token);
-            let kind = token.kind;
+            let kind = token.kind.clone();
             res.push(token);
             match kind {
                 TokenKind::Eof => break,
@@ -133,7 +133,7 @@ impl Scanner {
     fn identifier_kind(&self) -> TokenKind {
         match TokenKind::from_str(&self.source[self.start..self.current]) {
             Ok(kind) => kind,
-            Err(_) => TokenKind::Identifier,
+            Err(_) => TokenKind::Identifier(self.source[self.start..self.current].to_string()),
         }
     }
 
@@ -143,7 +143,13 @@ impl Scanner {
         {
             self.advance();
         }
-        self.make_token(TokenKind::Number)
+        self.make_token(TokenKind::Number(
+            self.source
+                .get(self.start..self.current)
+                .unwrap()
+                .parse()
+                .unwrap(),
+        ))
     }
 
     fn string(&mut self) -> Result<Token> {
@@ -163,7 +169,12 @@ impl Scanner {
             });
         }
         self.advance();
-        self.make_token(TokenKind::String)
+        self.make_token(TokenKind::String(
+            self.source
+                .get((self.start + 1)..(self.current - 1))
+                .unwrap()
+                .to_string(),
+        ))
     }
 
     fn skip_whitespace(&mut self) -> Result<()> {
@@ -237,24 +248,11 @@ impl Scanner {
     }
 
     fn make_token(&self, kind: TokenKind) -> Result<Token> {
-        let value_range = match kind {
-            TokenKind::String => (self.start + 1)..(self.current - 1),
-            _ => self.start..self.current,
-        };
         Ok(Token {
             kind,
             line: self.line,
             column: self.column,
             start: self.column - (self.current - self.start),
-            value: self
-                .source
-                .get(value_range)
-                .ok_or(Error {
-                    line: self.line,
-                    kind: ErrorKind::Unknown,
-                    cols: Some((self.start, self.current)),
-                })?
-                .to_string(),
         })
     }
 

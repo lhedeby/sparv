@@ -56,8 +56,7 @@ impl Parser<'_> {
 
     fn fun_decl(&mut self) -> Result<Declaration> {
         self.p += 1;
-        self.consume(TokenKind::Identifier)?;
-        let fun_identifier = self.tokens[self.p - 1].value.to_string();
+        let fun_identifier = self.consume_identifier()?;
         self.consume(TokenKind::LeftParen)?;
         let mut params: Vec<String> = vec![];
         let mut stmts: Vec<Statement> = vec![];
@@ -65,8 +64,7 @@ impl Parser<'_> {
         loop {
             match self.get_kind() {
                 TokenKind::Comma => self.p += 1,
-                TokenKind::Identifier => {
-                    let param_identifier = self.tokens[self.p].value.to_string();
+                TokenKind::Identifier(param_identifier) => {
                     params.push(param_identifier);
                     self.p += 1;
                 }
@@ -100,12 +98,20 @@ impl Parser<'_> {
 
     fn import(&mut self) -> Result<Declaration> {
         self.p += 1;
-        let path = self.tokens[self.p].value.to_string();
+        let kind = self.tokens[self.p].kind.clone();
+        let path = match kind {
+            TokenKind::String(s) => s,
+            k => return Err(Error {
+                line: self.get_token().line,
+                kind: ErrorKind::Import(format!("{:?}", k)),
+                cols: self.get_cols(),
+            })
+        };
 
         if path.split('.').last().unwrap() != "sparv" {
             return Err(Error {
                 line: self.get_token().line,
-                kind: ErrorKind::Import(path),
+                kind: ErrorKind::Import(path.to_string()),
                 cols: self.get_cols(),
             });
         }
@@ -126,7 +132,7 @@ impl Parser<'_> {
             }
             Err(_) => Err(Error {
                 line: self.get_token().line,
-                kind: ErrorKind::Import(path),
+                kind: ErrorKind::Import(path.to_string()),
                 cols: self.get_cols(),
             }),
         }
@@ -144,7 +150,7 @@ impl Parser<'_> {
             TokenKind::If => self.if_stmt(),
             TokenKind::Return => self.return_stmt(),
             TokenKind::Let => self.let_stmt(),
-            TokenKind::Identifier => self.identifier_stmt(),
+            TokenKind::Identifier(_) => self.identifier_stmt(),
             TokenKind::For => self.for_stmt(),
             // TODO: Think about if this is actually correct
             _ => self.expression_stmt(),
@@ -159,8 +165,7 @@ impl Parser<'_> {
 
     fn let_stmt(&mut self) -> Result<Statement> {
         self.p += 1;
-        self.consume(TokenKind::Identifier)?;
-        let identifier = self.tokens[self.p - 1].value.to_string();
+        let identifier = self.consume_identifier()?;
         self.consume(TokenKind::Equal)?;
 
         let expr = self.parse_expr(0)?;
@@ -228,8 +233,7 @@ impl Parser<'_> {
     fn for_stmt(&mut self) -> Result<Statement> {
         self.p += 1;
         let mut stmts = vec![];
-        let i = self.tokens[self.p].value.to_string();
-        self.consume(TokenKind::Identifier)?;
+        let i = self.consume_identifier()?;
         self.consume(TokenKind::In)?;
         let expr = self.parse_expr(0)?;
         self.consume(TokenKind::LeftBrace)?;
@@ -256,7 +260,7 @@ impl Parser<'_> {
         let mut left = self.parse_prefix(kind)?.clone();
 
         while precedence < infix_precedence(&self.tokens[self.p].kind) {
-            let token_kind = self.tokens[self.p].kind;
+            let token_kind = self.tokens[self.p].kind.clone();
             self.p += 1;
             left = self.parse_infix(&left, token_kind)?;
         }
@@ -282,15 +286,13 @@ impl Parser<'_> {
                 self.consume(TokenKind::RightBracket)?;
                 Ok(Expr::List(items))
             }
-            TokenKind::Identifier => {
-                let identifier = self.tokens[self.p - 1].value.clone();
-                let mut expr = Expr::Variable(identifier);
+            TokenKind::Identifier(identifier) => {
+                let mut expr = Expr::Variable(identifier.to_string());
                 loop {
                     match self.get_kind() {
                         TokenKind::Dot => {
                             self.p += 1;
-                            let i = self.tokens[self.p].value.clone();
-                            self.consume(TokenKind::Identifier)?;
+                            let i = self.consume_identifier()?;
                             expr = Expr::Get(i, Box::new(expr))
                         }
                         TokenKind::LeftParen => {
@@ -318,8 +320,8 @@ impl Parser<'_> {
                 }
                 Ok(expr)
             }
-            TokenKind::Number => Ok(Expr::Number(self.tokens[self.p - 1].value.parse().unwrap())),
-            TokenKind::String => Ok(Expr::String(self.tokens[self.p - 1].value.clone())),
+            TokenKind::Number(f) => Ok(Expr::Number(*f)),
+            TokenKind::String(s) => Ok(Expr::String(s.to_string())),
             TokenKind::True => Ok(Expr::Bool(true)),
             TokenKind::False => Ok(Expr::Bool(false)),
             TokenKind::Null => Ok(Expr::Null),
@@ -331,8 +333,7 @@ impl Parser<'_> {
                 loop {
                     match self.get_kind() {
                         TokenKind::Comma => self.p += 1,
-                        TokenKind::Identifier => {
-                            let param_identifier = self.tokens[self.p].value.to_string();
+                        TokenKind::Identifier(param_identifier) => {
                             params.push(param_identifier);
                             self.p += 1;
                         }
@@ -379,7 +380,7 @@ impl Parser<'_> {
             }
             actual => Err(Error {
                 line: self.get_token().line,
-                kind: ErrorKind::UnexpectedToken(None, *actual),
+                kind: ErrorKind::UnexpectedToken(None, actual.clone()),
                 cols: self.get_cols(),
             }),
         }
@@ -413,8 +414,23 @@ impl Parser<'_> {
         }
     }
 
+    fn consume_identifier(&mut self) -> Result<String> {
+        self.p += 1;
+        match &self.tokens[self.p - 1].kind {
+            TokenKind::Identifier(s) => Ok(s.to_string()),
+            actual => Err(Error {
+                line: self.tokens[self.p].line,
+                kind: ErrorKind::UnexpectedToken(
+                    Some(TokenKind::Identifier(format!(""))),
+                    actual.clone(),
+                ),
+                cols: self.get_cols(),
+            }),
+        }
+    }
+
     fn consume(&mut self, expected_token: TokenKind) -> Result<()> {
-        let actual = self.tokens[self.p].kind;
+        let actual = self.tokens[self.p].kind.clone();
         if expected_token != actual {
             return Err(Error {
                 line: self.tokens[self.p].line,

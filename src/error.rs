@@ -76,8 +76,8 @@ impl Display for ErrorKind {
                     f,
                     "Unexpected token '{:?}'{}",
                     actual,
-                    if expected.is_some() {
-                        format!(", expected '{:?}'", expected.unwrap())
+                    if let Some(s) = expected {
+                        format!(", expected '{:?}'", s)
                     } else {
                         "".to_string()
                     }
