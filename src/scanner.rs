@@ -5,16 +5,16 @@ use crate::{
     token::{Token, TokenKind},
 };
 
-pub struct Scanner {
+pub struct Scanner<'a> {
     start: usize,
     current: usize,
     line: usize,
     column: usize,
-    source: String,
+    source: &'a str,
 }
 
-impl Scanner {
-    pub fn get_tokens(source: String) -> Result<Vec<Token>> {
+impl Scanner<'_> {
+    pub fn get_tokens(source: &str) -> Result<Vec<Token>> {
         let mut scanner = Scanner {
             start: 0,
             current: 0,
@@ -75,7 +75,18 @@ impl Scanner {
                 };
                 self.make_token(token)
             }
-            '/' => self.make_token(TokenKind::Slash),
+            '/' => {
+                let token = if self.check_next('/') {
+                    while self.peek().is_some() && self.peek().unwrap() != '\n' && !self.is_at_end()
+                    {
+                        self.advance();
+                    }
+                    TokenKind::Comment
+                } else {
+                    TokenKind::Slash
+                };
+                self.make_token(token)
+            }
             '*' => self.make_token(TokenKind::Star),
             ':' => self.make_token(TokenKind::Colon),
             '%' => self.make_token(TokenKind::Percent),
@@ -181,14 +192,11 @@ impl Scanner {
         loop {
             if let Some(c) = self.peek() {
                 match c {
-                    ' ' | '\r' | '\t' => {
-                        //self.start+=1;
-                        _ = self.advance()
-                    }
+                    ' ' | '\r' | '\t' => _ = self.advance(),
                     '\n' => {
                         self.line += 1;
-                        self.column = 0;
                         self.advance();
+                        self.column = 0;
                     }
                     '#' => {
                         self.advance();
@@ -196,18 +204,6 @@ impl Scanner {
                             self.advance();
                         }
                         self.advance();
-                    }
-                    '/' => {
-                        if self.peek_next().is_some() && self.peek_next().unwrap() == '/' {
-                            while self.peek().is_some()
-                                && self.peek().unwrap() != '\n'
-                                && !self.is_at_end()
-                            {
-                                self.advance();
-                            }
-                        } else {
-                            break;
-                        }
                     }
                     _ => break,
                 }

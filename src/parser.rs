@@ -13,7 +13,9 @@ pub struct Parser<'a> {
 }
 
 impl Parser<'_> {
-    pub fn parse<'a>(tokens: Vec<Token>, root: &'a str) -> Result<Vec<Declaration>> {
+    pub fn parse<'a>(source: &'a str, root: &'a str) -> Result<Vec<Declaration>> {
+        let mut tokens = Scanner::get_tokens(source)?;
+        tokens.retain(|token| token.kind != TokenKind::Comment);
         let mut parser = Parser { p: 0, tokens, root };
         let mut decls: Vec<Declaration> = vec![];
         while parser.tokens[parser.p].kind != TokenKind::Eof {
@@ -70,11 +72,12 @@ impl Parser<'_> {
                 }
                 TokenKind::RightParen => break,
                 _ => {
+                    println!("IS IT THIS ERROR?");
                     return Err(Error {
                         line: self.get_token().line,
                         kind: ErrorKind::UnexpectedToken(None, self.get_kind()),
                         cols: self.get_cols(),
-                    })
+                    });
                 }
             }
         }
@@ -101,11 +104,13 @@ impl Parser<'_> {
         let kind = self.tokens[self.p].kind.clone();
         let path = match kind {
             TokenKind::String(s) => s,
-            k => return Err(Error {
-                line: self.get_token().line,
-                kind: ErrorKind::Import(format!("{:?}", k)),
-                cols: self.get_cols(),
-            })
+            k => {
+                return Err(Error {
+                    line: self.get_token().line,
+                    kind: ErrorKind::Import(format!("{:?}", k)),
+                    cols: self.get_cols(),
+                })
+            }
         };
 
         if path.split('.').last().unwrap() != "sparv" {
@@ -123,11 +128,9 @@ impl Parser<'_> {
             .unwrap_or("")
             .to_string()
             + &path;
-
         match fs::read_to_string(new_path.clone()) {
             Ok(source) => {
-                let tokens = Scanner::get_tokens(source)?;
-                let tree = Parser::parse(tokens, &new_path)?;
+                let tree = Parser::parse(&source, &new_path)?;
                 Ok(Declaration::Import(tree))
             }
             Err(_) => Err(Error {
@@ -379,9 +382,12 @@ impl Parser<'_> {
                 Ok(Expr::Object(res))
             }
             actual => Err(Error {
-                line: self.get_token().line,
+                line: self.tokens[self.p - 1].line,
                 kind: ErrorKind::UnexpectedToken(None, actual.clone()),
-                cols: self.get_cols(),
+                cols: Some((
+                    self.tokens[self.p - 1].start,
+                    self.tokens[self.p - 1].column,
+                )),
             }),
         }
     }

@@ -29,7 +29,12 @@ pub fn print_error(e: Error, file_path: &str, source: &str) {
         println!(
             "{}| {}{}",
             pad_right(" ", max_len, ' '),
-            " ".repeat(cols.0 - 1),
+            // TODO: Prevents err but probably isnt correct
+            if cols.0 > 0 {
+                " ".repeat(cols.0 - 1)
+            } else {
+                "".to_string()
+            },
             "^".repeat(cols.1 - cols.0)
         );
         println!();

@@ -58,6 +58,8 @@ pub enum TokenKind {
     While,
     Import,
     Eof,
+    // comments
+    Comment
 }
 
 pub struct ParseTokenKindError;

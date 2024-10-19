@@ -1,4 +1,4 @@
-use crate::error::print_error;
+use crate::{error::print_error, token::TokenKind};
 use std::{env, fs};
 
 use crate::{interpreter::Interpreter, parser::Parser, scanner::Scanner};
@@ -8,10 +8,15 @@ mod interpreter;
 mod parser;
 mod scanner;
 mod token;
+mod lsp;
 
 fn main() {
     // env::set_var("RUST_BACKTRACE", "1");
     let args: Vec<String> = env::args().collect();
+
+    if args.iter().any(|a| a == "lsp") {
+        lsp::server::start();
+    }
     match args.len() {
         2 => run_file(args.last().unwrap()),
         _ => panic!("Expected file path as only parameter"),
@@ -27,15 +32,7 @@ pub fn run_file(file_path: &str) {
         Ok(source) => {
 
             println!("Running: {file_path}");
-            let tokens = match Scanner::get_tokens(source.to_string()) {
-                Ok(res) => res,
-                Err(e) => {
-                    println!("Lexing Error");
-                    print_error(e, file_path, &source);
-                    return;
-                }
-            };
-            let tree = match Parser::parse(tokens, file_path) {
+            let tree = match Parser::parse(&source, file_path) {
                 Ok(res) => res,
                 Err(e) => {
                     println!("Parsing Error");

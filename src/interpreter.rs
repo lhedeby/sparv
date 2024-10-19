@@ -6,13 +6,6 @@ use crate::error::Error;
 use crate::parser::{Declaration, Expr, Statement};
 use crate::token::TokenKind as TK;
 
-// #[derive(Debug)]
-// pub enum RuntimeError {
-//     MissingVariable,
-//     NoVariableEnvironment,
-//     _UnexpectedType,
-// }
-
 type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
