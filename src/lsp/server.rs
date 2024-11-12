@@ -2,7 +2,11 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use crate::log;
-use crate::lsp::contracts::{BaseMessage, Diagnostic, DidChangeTextDocumentNotification, DidOpenTextDocumentNotification, InitializeRequest, InitializeResult, Notification, Position, PublishDiagnosticsParams, Range, Response, SemanticTokenRequest, SemanticTokens};
+use crate::lsp::contracts::{
+    BaseMessage, Diagnostic, DidChangeTextDocumentNotification, DidOpenTextDocumentNotification,
+    InitializeRequest, InitializeResult, Notification, Position, PublishDiagnosticsParams, Range,
+    Response, SemanticTokenRequest, SemanticTokens,
+};
 use crate::lsp::logger;
 use crate::parser::{Declaration, Parser};
 use crate::scanner::Scanner;
@@ -17,7 +21,9 @@ use std::thread;
 
 use std::time::Duration;
 
-use super::contracts::{SemanticTokensLegend, SemanticTokensOptions, ServerCapabilities, ServerInfo, TextDocumentItem};
+use super::contracts::{
+    SemanticTokensLegend, SemanticTokensOptions, ServerCapabilities, ServerInfo, TextDocumentItem,
+};
 
 const HEADER: &'static str = "Content-Length: ";
 const HEADER_LEN: usize = HEADER.len();
@@ -181,7 +187,7 @@ pub fn start() {
                     send_message(&notification);
                 }
                 Err(e) => {
-                    log!("LSPError - Parsing: {}, {}, {:?}", e, e.line, e.cols);
+                    log!("LSPError - Parsing: {}, {}, cols: {},{}", e, e.line, e.start, e.end);
                     let params = PublishDiagnosticsParams {
                         diagnostics: vec![Diagnostic {
                             source: Some("sparv-lsp".to_owned()),
@@ -190,12 +196,12 @@ pub fn start() {
                             range: Range {
                                 start: Position {
                                     line: e.line - 1,
-                                    character: e.cols.unwrap().0,
+                                    character: e.start, // character: e.cols.unwrap().0,
                                 },
 
                                 end: Position {
                                     line: e.line - 1,
-                                    character: e.cols.unwrap().1,
+                                    character: e.end, // character: e.cols.unwrap().1,
                                 },
                             },
                             severity: None,
@@ -228,7 +234,6 @@ fn send_message<T: Serialize>(obj: &T) {
     stdout.flush().unwrap();
 }
 
-
 fn handle_request<R, T>(message: BaseMessage, state: &mut State)
 where
     R: DeserializeOwned + Request<T>,
@@ -244,7 +249,6 @@ where
     };
     send_message(&response);
 }
-
 
 #[derive(Debug)]
 pub struct State {
@@ -266,7 +270,6 @@ impl State {
         self.documents.get(s)
     }
 }
-
 
 pub trait Request<T: Serialize> {
     fn handle(&self, state: &mut State) -> T;
@@ -304,4 +307,3 @@ impl Request<InitializeResult> for InitializeRequest {
         }
     }
 }
-

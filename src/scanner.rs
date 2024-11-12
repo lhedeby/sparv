@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    error::{Error, ErrorKind, Result},
+    error::{Error, Result},
     token::{Token, TokenKind},
 };
 
@@ -34,6 +34,15 @@ impl Scanner<'_> {
             }
         }
         Ok(res)
+    }
+
+    fn err(&mut self, msg: String) -> Error {
+        Error {
+            line: self.line,
+            start: self.start,
+            end: self.current,
+            msg,
+        }
     }
 
     fn next_token(&mut self) -> Result<Token> {
@@ -123,11 +132,7 @@ impl Scanner<'_> {
                 self.make_token(token)
             }
             '"' => self.string(),
-            _ => Err(Error {
-                line: self.line,
-                kind: ErrorKind::UnexpectedCharacter,
-                cols: Some((self.start, self.current)),
-            }),
+            _ => Err(self.err("Unexpected character".to_string())),
         }
     }
 
@@ -173,11 +178,12 @@ impl Scanner<'_> {
             self.advance();
         }
         if self.is_at_end() {
-            return Err(Error {
-                line,
-                kind: ErrorKind::UnterminatedString,
-                cols: Some((self.start, self.current)),
-            });
+            return Err(self.err("Unterminated string".to_string()));
+            // return Err(Error {
+            //     line,
+            //     kind: ErrorKind::UnterminatedString,
+            //     cols: Some((self.start, self.current)),
+            // });
         }
         self.advance();
         self.make_token(TokenKind::String(

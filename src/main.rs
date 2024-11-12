@@ -9,6 +9,7 @@ mod parser;
 mod scanner;
 mod token;
 mod lsp;
+mod analysis;
 
 fn main() {
     // env::set_var("RUST_BACKTRACE", "1");

@@ -1,7 +1,8 @@
 use std::fs;
 
 use crate::{
-    error::{Error, ErrorKind, Result},
+    analysis,
+    error::{Error, Result},
     scanner::Scanner,
     token::{Token, TokenKind},
 };
@@ -33,6 +34,7 @@ impl Parser<'_> {
                 unreachable!("All import declarations are resolved by this point")
             }
         });
+        analysis::run(&decls)?;
         // println!("=== DECLARATIONS ===");
         // for d in &decls {
         //     println!("{:?}", d);
@@ -72,11 +74,12 @@ impl Parser<'_> {
                 }
                 TokenKind::RightParen => break,
                 _ => {
-                    println!("IS IT THIS ERROR?");
+                    let t = self.get_token();
                     return Err(Error {
-                        line: self.get_token().line,
-                        kind: ErrorKind::UnexpectedToken(None, self.get_kind()),
-                        cols: self.get_cols(),
+                        line: t.line,
+                        start: t.start,
+                        end: t.column,
+                        msg: format!("Unexpected token"),
                     });
                 }
             }
@@ -105,20 +108,12 @@ impl Parser<'_> {
         let path = match kind {
             TokenKind::String(s) => s,
             k => {
-                return Err(Error {
-                    line: self.get_token().line,
-                    kind: ErrorKind::Import(format!("{:?}", k)),
-                    cols: self.get_cols(),
-                })
+                return Err(self.err(format!("Could not import file: '{:?}'", k)));
             }
         };
 
         if path.split('.').last().unwrap() != "sparv" {
-            return Err(Error {
-                line: self.get_token().line,
-                kind: ErrorKind::Import(path.to_string()),
-                cols: self.get_cols(),
-            });
+            return Err(self.err(format!("Could not import file: '{}'", path)));
         }
         let root_path = std::path::Path::new(self.root);
         let new_path = root_path
@@ -133,11 +128,7 @@ impl Parser<'_> {
                 let tree = Parser::parse(&source, &new_path)?;
                 Ok(Declaration::Import(tree))
             }
-            Err(_) => Err(Error {
-                line: self.get_token().line,
-                kind: ErrorKind::Import(path.to_string()),
-                cols: self.get_cols(),
-            }),
+            Err(_) => Err(self.err(format!("Could not import file: '{}'", path))),
         }
     }
 
@@ -270,7 +261,6 @@ impl Parser<'_> {
         Ok(left)
     }
 
-    // this is the parselets?
     fn parse_prefix(&mut self, token_kind: &TokenKind) -> Result<Expr> {
         match token_kind {
             TokenKind::Plus | TokenKind::Minus | TokenKind::Bang => {
@@ -299,6 +289,8 @@ impl Parser<'_> {
                             expr = Expr::Get(i, Box::new(expr))
                         }
                         TokenKind::LeftParen => {
+                            let line = self.get_token().line;
+                            let start = self.get_token().start;
                             self.p += 1;
                             let mut params = vec![];
 
@@ -310,8 +302,10 @@ impl Parser<'_> {
                                 }
                             }
 
+                            let end = self.get_token().column;
+
                             self.consume(TokenKind::RightParen)?;
-                            expr = Expr::Call(params, Box::new(expr))
+                            expr = Expr::Call(params, Box::new(expr), (line, start, end))
                         }
                         TokenKind::LeftBracket => {
                             self.p += 1;
@@ -341,13 +335,7 @@ impl Parser<'_> {
                             self.p += 1;
                         }
                         TokenKind::RightParen => break,
-                        actual => {
-                            return Err(Error {
-                                line: self.get_token().line,
-                                kind: ErrorKind::UnexpectedToken(None, actual),
-                                cols: self.get_cols(),
-                            })
-                        }
+                        actual => return Err(self.err(format!("Unexpected token '{:?}'", actual))),
                     }
                 }
                 self.consume(TokenKind::RightParen)?;
@@ -383,11 +371,9 @@ impl Parser<'_> {
             }
             actual => Err(Error {
                 line: self.tokens[self.p - 1].line,
-                kind: ErrorKind::UnexpectedToken(None, actual.clone()),
-                cols: Some((
-                    self.tokens[self.p - 1].start,
-                    self.tokens[self.p - 1].column,
-                )),
+                start: self.tokens[self.p - 1].start,
+                end: self.tokens[self.p - 1].column,
+                msg: format!("Unexpected token '{:?}'", actual),
             }),
         }
     }
@@ -406,11 +392,7 @@ impl Parser<'_> {
                     Ok(Expr::Set(s.to_string(), g_expr.clone(), Box::new(right)))
                 }
                 Expr::Index(e1, e2) => Ok(Expr::SetList(e1.clone(), e2.clone(), Box::new(right))),
-                _ => Err(Error {
-                    line: self.get_token().line,
-                    kind: ErrorKind::Assignment,
-                    cols: self.get_cols(),
-                }),
+                _ => Err(self.err("Invalid assignment".to_string())),
             },
             _ => Ok(Expr::Operator(
                 Box::new(expr.clone()),
@@ -424,32 +406,23 @@ impl Parser<'_> {
         self.p += 1;
         match &self.tokens[self.p - 1].kind {
             TokenKind::Identifier(s) => Ok(s.to_string()),
-            actual => Err(Error {
-                line: self.tokens[self.p].line,
-                kind: ErrorKind::UnexpectedToken(
-                    Some(TokenKind::Identifier(format!(""))),
-                    actual.clone(),
-                ),
-                cols: self.get_cols(),
-            }),
+            actual => Err(self.err(format!(
+                "Unexpected token '{:?}', expected 'identifier'",
+                actual
+            ))),
         }
     }
 
     fn consume(&mut self, expected_token: TokenKind) -> Result<()> {
         let actual = self.tokens[self.p].kind.clone();
         if expected_token != actual {
-            return Err(Error {
-                line: self.tokens[self.p].line,
-                kind: ErrorKind::UnexpectedToken(Some(expected_token), actual),
-                cols: self.get_cols(),
-            });
+            return Err(self.err(format!(
+                "Unexpected token '{:?}', expected '{:?}'",
+                actual, expected_token
+            )));
         }
         self.p += 1;
         Ok(())
-    }
-
-    fn get_cols(&mut self) -> Option<(usize, usize)> {
-        Some((self.tokens[self.p].start, self.tokens[self.p].column))
     }
 
     fn get_token(&mut self) -> &Token {
@@ -458,6 +431,16 @@ impl Parser<'_> {
 
     fn get_kind(&mut self) -> TokenKind {
         self.tokens[self.p].kind.clone()
+    }
+
+    fn err(&mut self, msg: String) -> Error {
+        let token = self.get_token();
+        Error {
+            line: token.line,
+            start: token.start,
+            end: token.column,
+            msg: msg.to_string(),
+        }
     }
 }
 // PRECEDENCE
@@ -511,6 +494,14 @@ pub enum Statement {
     Assignment(String, Vec<String>, Expr),
 }
 
+pub struct AnnotatedExpr {
+    pub expr: Expr,
+    pub start_line: usize,
+    pub start_char: usize,
+    pub end_line: usize,
+    pub end_char: usize,
+}
+
 #[derive(Clone, Debug)]
 pub enum Expr {
     Prefix(TokenKind, Box<Expr>),
@@ -522,7 +513,7 @@ pub enum Expr {
     Function(Vec<String>, Vec<Statement>),
     Get(String, Box<Expr>),
     Set(String, Box<Expr>, Box<Expr>),
-    Call(Vec<Expr>, Box<Expr>),
+    Call(Vec<Expr>, Box<Expr>, (usize, usize, usize)),
     Variable(String),
     Object(Vec<Expr>),
     List(Vec<Expr>),

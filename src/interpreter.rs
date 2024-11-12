@@ -9,7 +9,7 @@ use crate::token::TokenKind as TK;
 type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
-pub struct Variables {
+struct Variables {
     variables: Vec<HashMap<String, V>>,
     return_value: Option<V>,
 }
@@ -17,8 +17,9 @@ pub struct Variables {
 fn gen_err(s: String) -> Error {
     Error {
         line: 0,
-        kind: crate::error::ErrorKind::Runtime(s),
-        cols: None,
+        start: 0,
+        end: 0,
+        msg: s
     }
 }
 
@@ -128,7 +129,7 @@ impl Interpreter {
 }
 
 impl Declaration {
-    pub fn interpret(&self, vars: &mut Variables) -> Result<()> {
+    fn interpret(&self, vars: &mut Variables) -> Result<()> {
         match self {
             Declaration::Function(name, params, stmts) => vars.add(
                 name.to_string(),
@@ -141,7 +142,7 @@ impl Declaration {
 }
 
 impl Statement {
-    pub fn interpret(&self, vars: &mut Variables) -> Result<()> {
+    fn interpret(&self, vars: &mut Variables) -> Result<()> {
         match self {
             Statement::Expression(expr) => {
                 _ = expr.interpret(vars)?;
@@ -195,7 +196,7 @@ impl Statement {
 }
 
 impl Expr {
-    pub fn interpret(&self, vars: &mut Variables) -> Result<V> {
+    fn interpret(&self, vars: &mut Variables) -> Result<V> {
         let res = match self {
             Expr::Prefix(token_kind, expr) => match token_kind {
                 TK::Minus => V::Number(-expr.interpret(vars)?.as_num()),
@@ -356,16 +357,17 @@ impl Expr {
                     .insert(s.to_string(), resolved);
                 V::Bool(true)
             }
-            Expr::Call(params, expr) => {
+            Expr::Call(params, expr, _) => {
                 vars.begin_scope();
                 match expr.interpret(vars)? {
                     V::Func(param_names, stmts, env) => {
                         if param_names.len() != params.len() {
-                            return Err(gen_err(format!(
-                                "Trying to call a function with {} parameters with {} paramaters",
-                                param_names.len(),
-                                params.len()
-                            )));
+                            return Err(Error {
+                                line: 0, 
+                                start: 0, 
+                                    end: 0, 
+                                msg: format!("Trying to call a function with {} parameters with {} paramaters", param_names.len(), params.len()),
+                            });
                         }
                         vars.add_scope(env)?;
 
@@ -537,7 +539,7 @@ fn resolve_get(expr: Box<Expr>, vars: &mut Variables) -> Result<&mut V> {
 }
 
 #[derive(Debug, Clone)]
-pub enum V {
+enum V {
     String(String),
     Number(f64),
     Bool(bool),
@@ -549,7 +551,7 @@ pub enum V {
 }
 
 #[derive(Debug, Clone)]
-pub enum NativeFunction {
+enum NativeFunction {
     Print,
     ReadFile,
     ReadInput,

@@ -25,30 +25,20 @@ pub fn print_error(e: Error, file_path: &str, source: &str) {
         pad_right(&e.line.to_string(), max_len, ' '),
         lines[e.line - 1]
     );
-    if let Some(cols) = e.cols {
+    // if let Some(cols) = e.cols {
         println!(
             "{}| {}{}",
             pad_right(" ", max_len, ' '),
             // TODO: Prevents err but probably isnt correct
-            if cols.0 > 0 {
-                " ".repeat(cols.0 - 1)
+            if e.start > 0 {
+                " ".repeat(e.start - 1)
             } else {
                 "".to_string()
             },
-            "^".repeat(cols.1 - cols.0)
+            "^".repeat(e.end - e.start)
         );
         println!();
-        println!("|>|>{} {}", " ".repeat(cols.0), e);
-    } else {
-        println!(
-            "{}| {}",
-            pad_right("", max_len, ' '),
-            "^".repeat(lines[e.line - 1].len())
-        );
-        println!();
-        println!(">>>  {}", e);
-    }
-    // println!("{}| ", pad_right("..", max_len, ' '));
+        println!("|>|>{} {}", " ".repeat(e.start), e);
 }
 
 fn pad_right(s: &str, max_len: usize, c: char) -> String {
@@ -60,47 +50,13 @@ fn pad_right(s: &str, max_len: usize, c: char) -> String {
 
 pub struct Error {
     pub line: usize,
-    pub kind: ErrorKind,
-    pub cols: Option<(usize, usize)>,
+    pub start: usize,
+    pub end: usize,
+    pub msg: String,
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.kind)
+        write!(f, "{}", self.msg)
     }
-}
-
-impl Display for ErrorKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ErrorKind::UnexpectedCharacter => write!(f, "Unexpected character"),
-            ErrorKind::UnterminatedString => write!(f, "Unterminated string"),
-            ErrorKind::Unknown => write!(f, "An unknown error has occured"),
-            ErrorKind::UnexpectedToken(expected, actual) => {
-                write!(
-                    f,
-                    "Unexpected token '{:?}'{}",
-                    actual,
-                    if let Some(s) = expected {
-                        format!(", expected '{:?}'", s)
-                    } else {
-                        "".to_string()
-                    }
-                )
-            }
-            ErrorKind::Assignment => write!(f, "Invalid assignment"),
-            ErrorKind::Import(file_name) => write!(f, "Could not import file: '{file_name}'"),
-            ErrorKind::Runtime(s) => write!(f, "Runtime error: {}", s),
-        }
-    }
-}
-
-pub enum ErrorKind {
-    UnexpectedCharacter,
-    UnterminatedString,
-    UnexpectedToken(Option<TokenKind>, TokenKind),
-    Assignment,
-    Import(String),
-    Unknown,
-    Runtime(String),
 }
