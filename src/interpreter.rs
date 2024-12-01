@@ -3,7 +3,7 @@ use std::fmt::Display;
 use std::io::{self, Write};
 
 use crate::error::Error;
-use crate::parser::{Declaration, Expr, Statement};
+use crate::parser::{Expr, Declaration, ExprKind, Statement};
 use crate::token::TokenKind as TK;
 
 type Result<T> = std::result::Result<T, Error>;
@@ -145,14 +145,14 @@ impl Statement {
     fn interpret(&self, vars: &mut Variables) -> Result<()> {
         match self {
             Statement::Expression(expr) => {
-                _ = expr.interpret(vars)?;
+                _ = expr.expr.interpret(vars)?;
             }
             Statement::Let(name, expr) => {
-                let expr = expr.interpret(vars)?;
+                let expr = expr.expr.interpret(vars)?;
                 vars.add(name.to_string(), expr)?;
             }
             Statement::For(i, expr, stmts) => {
-                let list = expr.interpret(vars)?.as_list();
+                let list = expr.expr.interpret(vars)?.as_list();
                 for item in list {
                     vars.begin_scope();
                     vars.add(i.to_string(), item)?;
@@ -164,7 +164,7 @@ impl Statement {
             }
             Statement::If(expr, if_stmts, else_stmts) => {
                 vars.begin_scope();
-                if expr.interpret(vars)?.as_bool() {
+                if expr.expr.interpret(vars)?.as_bool() {
                     for stmt in if_stmts {
                         stmt.interpret(vars)?
                     }
@@ -177,12 +177,12 @@ impl Statement {
             }
             Statement::Return(expr) => {
                 // set return value in variables?
-                let v = expr.interpret(vars)?;
+                let v = expr.expr.interpret(vars)?;
                 vars.return_value = Some(v);
             }
             Statement::While(expr, stmts) => {
                 vars.begin_scope();
-                while expr.interpret(vars)?.as_bool() {
+                while expr.expr.interpret(vars)?.as_bool() {
                     for stmt in stmts {
                         stmt.interpret(vars)?;
                     }
@@ -195,17 +195,17 @@ impl Statement {
     }
 }
 
-impl Expr {
+impl ExprKind {
     fn interpret(&self, vars: &mut Variables) -> Result<V> {
         let res = match self {
-            Expr::Prefix(token_kind, expr) => match token_kind {
-                TK::Minus => V::Number(-expr.interpret(vars)?.as_num()),
-                TK::Bang => V::Bool(!expr.interpret(vars)?.as_bool()),
+            ExprKind::Prefix(token_kind, expr) => match token_kind {
+                TK::Minus => V::Number(-expr.expr.interpret(vars)?.as_num()),
+                TK::Bang => V::Bool(!expr.expr.interpret(vars)?.as_bool()),
                 _ => panic!("not valid prefixtoken '{:?}'", token_kind),
             },
-            Expr::Operator(lhs, token_kind, rhs) => {
-                let expr1 = lhs.interpret(vars)?;
-                let expr2 = rhs.interpret(vars)?;
+            ExprKind::Operator(lhs, token_kind, rhs) => {
+                let expr1 = lhs.expr.interpret(vars)?;
+                let expr2 = rhs.expr.interpret(vars)?;
                 match (expr1, token_kind, expr2) {
                     /*
                      *   Arithmetic
@@ -236,13 +236,16 @@ impl Expr {
                     (V::String(s1), TK::EqualEqual, V::String(s2)) => V::Bool(s1 == s2), // ==
                     (V::String(s1), TK::BangEqual, V::String(s2)) => V::Bool(s1 != s2),  // !=
 
-                    // Nubmers
+                    // Numbers
                     (V::Number(n1), TK::EqualEqual, V::Number(n2)) => V::Bool(n1 == n2), // ==
                     (V::Number(n1), TK::BangEqual, V::Number(n2)) => V::Bool(n1 != n2),  // !=
                     (V::Number(n1), TK::Greater, V::Number(n2)) => V::Bool(n1 > n2),     // >
                     (V::Number(n1), TK::GreaterEqual, V::Number(n2)) => V::Bool(n1 >= n2), // >=
                     (V::Number(n1), TK::Less, V::Number(n2)) => V::Bool(n1 < n2),        // <
                     (V::Number(n1), TK::LessEqual, V::Number(n2)) => V::Bool(n1 <= n2),  // <=
+                    
+                    // Null
+                    (V::Null, TK::EqualEqual, V::Null) => V::Bool(true),
 
                     /*
                      *   Logical
@@ -325,41 +328,41 @@ impl Expr {
                     ),
                 }
             }
-            Expr::Number(n) => V::Number(*n),
-            Expr::String(s) => V::String(s.to_string()),
-            Expr::Bool(b) => V::Bool(*b),
-            Expr::Null => V::Null,
-            Expr::Variable(s) => vars.get(s)?.clone(),
-            Expr::Object(fields) => {
+            ExprKind::Number(n) => V::Number(*n),
+            ExprKind::String(s) => V::String(s.to_string()),
+            ExprKind::Bool(b) => V::Bool(*b),
+            ExprKind::Null => V::Null,
+            ExprKind::Variable(s) => vars.get(s)?.clone(),
+            ExprKind::Object(fields) => {
                 let mut map = HashMap::new();
                 for f in fields {
-                    match f {
-                        Expr::Operator(identifier, op, expr) => {
+                    match &f.expr {
+                        ExprKind::Operator(identifier, op, expr) => {
                             assert_eq!(op, &TK::Equal);
-                            let key = identifier.interpret(vars)?.as_string();
-                            map.insert(key, expr.interpret(vars)?);
+                            let key = identifier.expr.interpret(vars)?.as_string();
+                            map.insert(key, expr.expr.interpret(vars)?);
                         }
                         _ => panic!("must be operator."),
                     }
                 }
                 V::Obj(map)
             }
-            Expr::Get(s, expr) => expr
+            ExprKind::Get(s, expr) => expr.expr
                 .interpret(vars)?
                 .as_mut_obj()
                 .get_mut(s)
                 .unwrap()
                 .clone(),
-            Expr::Set(s, g_expr, expr) => {
-                let resolved = expr.interpret(vars)?;
+            ExprKind::Set(s, g_expr, expr) => {
+                let resolved = expr.expr.interpret(vars)?;
                 resolve_get(g_expr.clone(), vars)?
                     .as_mut_obj()
                     .insert(s.to_string(), resolved);
                 V::Bool(true)
             }
-            Expr::Call(params, expr, _) => {
+            ExprKind::Call(params, expr) => {
                 vars.begin_scope();
-                match expr.interpret(vars)? {
+                match expr.expr.interpret(vars)? {
                     V::Func(param_names, stmts, env) => {
                         if param_names.len() != params.len() {
                             return Err(Error {
@@ -372,7 +375,7 @@ impl Expr {
                         vars.add_scope(env)?;
 
                         for (name, param_expr) in std::iter::zip(param_names, params) {
-                            let res = param_expr.interpret(vars)?;
+                            let res = param_expr.expr.interpret(vars)?;
                             vars.add(name, res)?;
                         }
                         for stmt in stmts {
@@ -392,7 +395,7 @@ impl Expr {
                         }
                         let resolved_params: Vec<V> = params
                             .iter()
-                            .map(|x| x.interpret(vars))
+                            .map(|x| x.expr.interpret(vars))
                             .collect::<Result<Vec<V>>>()?;
                         // TODO: naming
                         let res = exec_native_fn(native_fn, resolved_params);
@@ -405,34 +408,34 @@ impl Expr {
 
                 V::Null
             }
-            Expr::List(items) => V::List(
+            ExprKind::List(items) => V::List(
                 items
                     .iter()
-                    .map(|x| x.interpret(vars))
+                    .map(|x| x.expr.interpret(vars))
                     .collect::<Result<Vec<V>>>()?,
             ),
-            Expr::Index(list, index) => match list.interpret(vars)? {
+            ExprKind::Index(list, index) => match list.expr.interpret(vars)? {
                 V::List(items) => items
-                    .get(index.interpret(vars)?.as_num() as usize)
+                    .get(index.expr.interpret(vars)?.as_num() as usize)
                     .unwrap()
                     .clone(),
                 V::String(s) => V::String(
                     s.chars()
-                        .nth(index.interpret(vars)?.as_num() as usize)
+                        .nth(index.expr.interpret(vars)?.as_num() as usize)
                         .unwrap()
                         .to_string(),
                 ),
 
                 _ => panic!("cant index non-list"),
             },
-            Expr::SetList(list, index, new) => {
-                let new_val = new.interpret(vars)?;
-                let idx = index.interpret(vars)?.as_num() as usize;
+            ExprKind::SetList(list, index, new) => {
+                let new_val = new.expr.interpret(vars)?;
+                let idx = index.expr.interpret(vars)?.as_num() as usize;
                 let resolved = resolve_get(list.clone(), vars)?.as_mut_list();
                 resolved[idx] = new_val;
                 V::Null
             }
-            Expr::Function(params, stmts) => {
+            ExprKind::Function(params, stmts) => {
                 V::Func(params.to_vec(), stmts.to_vec(), Some(vars.get_scope()?))
             }
         };
@@ -531,9 +534,10 @@ fn exec_native_fn(kind: NativeFunction, resolved_params: Vec<V>) -> Result<V> {
 }
 
 fn resolve_get(expr: Box<Expr>, vars: &mut Variables) -> Result<&mut V> {
-    match *expr.clone() {
-        Expr::Get(s, expr) => Ok(resolve_get(expr, vars)?.as_mut_obj().get_mut(&s).unwrap()),
-        Expr::Variable(s) => vars.get_mut(&s),
+    match expr.expr.clone() {
+        ExprKind::Get(s, expr) => Ok(resolve_get(expr, vars)?.as_mut_obj().get_mut(&s).unwrap()),
+        // TODO: Err if not found
+        ExprKind::Variable(s) => vars.get_mut(&s),
         _ => panic!("must be Get"),
     }
 }

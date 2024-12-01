@@ -61,6 +61,104 @@ pub struct TextDocumentIdentifier {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct CompletionParams {
+    context: Option<CompletionContext>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CompletionContext {
+    #[serde(rename = "triggerKind")]
+    trigger_kind: usize,
+    #[serde(rename = "triggerCharacter")]
+    trigger_character: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MarkupContent {
+    pub kind: String,
+    pub value: String
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CompletionList {
+    #[serde(rename = "isIncomplete")]
+    pub is_incomplete: bool,
+    pub items: Vec<CompletionItem>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CompletionItem {
+    pub label: String,
+    pub kind: Option<usize>,
+    pub detail: Option<String>,
+    pub documentation: MarkupContent,
+    #[serde(rename = "insertText")]
+    pub insert_text: Option<String>,
+    #[serde(rename = "insertTextFormat")]
+    pub insert_text_format: usize,
+    // labelDetails: CompletionItemLabelDetails;
+    // tags?: CompletionItemTag[];
+    // preselect?: boolean;
+    // sortText?: string;
+    // filterText?: string;
+    // insertTextMode?: InsertTextMode;
+    // textEdit?: TextEdit | InsertReplaceEdit;
+    // textEditText?: string;
+    // additionalTextEdits?: TextEdit[];
+
+    // commitCharacters?: string[];
+    // command?: Command;
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct DocumentFormattingParams {
+    #[serde(rename = "textDocument")]
+    pub text_document: TextDocumentIdentifier,
+    pub options: FormattingOptions,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct FormattingOptions {
+    #[serde(rename = "tabSize")]
+    pub tab_size: usize,
+    #[serde(rename = "insertSpaces")]
+    pub insert_spaces: bool,
+    #[serde(rename = "trimTrailingWhitespace")]
+    pub trim_trailing_whitespace: Option<bool>,
+    #[serde(rename = "insertFinalNewline")]
+    pub insert_final_newline: Option<bool>,
+    #[serde(rename = "trimFinalNewlines")]
+    pub trim_final_newlines: Option<bool>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TextEdit {
+    pub range: Range,
+    #[serde(rename = "newText")]
+    pub new_text: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct HoverParams {
+    #[serde(rename = "textDocument")]
+    pub text_document: TextDocumentIdentifier,
+    pub position: Position,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Hover {
+    pub contents: String,
+    pub range: Option<Range>,
+}
+
+// #[derive(Serialize, Deserialize, Debug)]
+// pub struct TextDocumentPositionParams {
+//     #[serde(rename = "textDocument")]
+//     text_document: TextDocumentIdentifier,
+//     position: Position
+// }
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct DidChangeTextDocumentNotification {
     #[serde(rename = "textDocument")]
     pub text_document: TextDocumentChangeItem,
@@ -129,6 +227,10 @@ pub struct InitializeResult {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ServerCapabilities {
+    #[serde(rename = "completionProvider")]
+    pub completion_provider: CompletionOptions,
+    #[serde(rename = "documentFormattingProvider")]
+    pub document_formatting_provider: bool,
     #[serde(rename = "hoverProvider")]
     pub hover_provider: bool,
     #[serde(rename = "definitionProvider")]
@@ -141,6 +243,14 @@ pub struct ServerCapabilities {
     pub text_document_sync_save: bool,
     #[serde(rename = "semanticTokensProvider")]
     pub semantic_tokens_provider: SemanticTokensOptions,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CompletionOptions {
+    #[serde(rename = "triggerCharacters")]
+    pub trigger_characters: Vec<String>,
+    #[serde(rename = "resolveProvider")]
+    pub resolve_provider: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

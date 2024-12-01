@@ -1,11 +1,13 @@
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
+use super::formatter::Formatter;
 use crate::log;
 use crate::lsp::contracts::{
-    BaseMessage, Diagnostic, DidChangeTextDocumentNotification, DidOpenTextDocumentNotification,
-    InitializeRequest, InitializeResult, Notification, Position, PublishDiagnosticsParams, Range,
-    Response, SemanticTokenRequest, SemanticTokens,
+    BaseMessage, CompletionItem, CompletionParams, Diagnostic, DidChangeTextDocumentNotification,
+    DidOpenTextDocumentNotification, DocumentFormattingParams, Hover, HoverParams,
+    InitializeRequest, InitializeResult, MarkupContent, Notification, Position,
+    PublishDiagnosticsParams, Range, Response, SemanticTokenRequest, SemanticTokens, TextEdit,
 };
 use crate::lsp::logger;
 use crate::parser::{Declaration, Parser};
@@ -22,7 +24,8 @@ use std::thread;
 use std::time::Duration;
 
 use super::contracts::{
-    SemanticTokensLegend, SemanticTokensOptions, ServerCapabilities, ServerInfo, TextDocumentItem,
+    CompletionOptions, SemanticTokensLegend, SemanticTokensOptions, ServerCapabilities, ServerInfo,
+    TextDocumentItem,
 };
 
 const HEADER: &'static str = "Content-Length: ";
@@ -32,6 +35,9 @@ pub fn start() {
     log!("Server started...");
     let state = Arc::new(Mutex::new(State::new()));
     let readonly_state = Arc::clone(&state);
+
+    let has_changed = Arc::new(Mutex::new(true));
+    let has_changed_diag = Arc::clone(&has_changed);
 
     let tree = Arc::new(Mutex::new(Vec::<Declaration>::new()));
 
@@ -58,6 +64,7 @@ pub fn start() {
                 .read_exact(&mut body)
                 .expect("Failed to read content");
 
+            *has_changed.lock().unwrap() = true;
             // Process the body (assume it's a UTF-8 JSON string)
             let body_str = std::str::from_utf8(&body).expect("Invalid UTF-8 in body");
             log!("the body {}", body_str);
@@ -93,6 +100,103 @@ pub fn start() {
                             .text
                             .clone();
                         doc.version = notification.text_document.version;
+                    }
+                    "textDocument/completion" => {
+                        log!("textDocument/completion");
+                        log!("HEERHEHREHREHRHERHE");
+                        let completion_params: CompletionParams =
+                            serde_json::from_value(v.params.unwrap()).unwrap();
+                        log!("{:?}", completion_params);
+                        let items = vec![CompletionItem {
+                            label: "print".to_string(),
+                            kind: Some(1),
+                            detail: Some("Prints some stuff".to_string()),
+                            documentation: MarkupContent {
+                                kind: "markdown".to_string(),
+                                value: "Prints some text to the console.\n\nExample:\n```rust\nprint!(\"Hello, world!\");\n```".to_string(),
+                            },
+                            insert_text: Some("print()".to_string()),
+                            insert_text_format: 1,
+                        },
+                        CompletionItem {
+                            label: "typeof".to_string(),
+                            kind: Some(1),
+                            detail: None,
+                            documentation: MarkupContent {
+                                kind: "markdown".to_string(),
+                                value: "typetype".to_string(),
+                            },
+                            insert_text: Some("typeof()".to_string()),
+                            insert_text_format: 1,
+                        }
+                        ];
+                        let response = Response::<Vec<CompletionItem>> {
+                            id: v.id,
+                            jsonrpc: "2.0".to_string(),
+                            result: items,
+                        };
+                        send_message(&response);
+                    }
+                    "textDocument/formatting" => {
+                        log!("textDocument/formatting");
+                        let document_formatting_params: DocumentFormattingParams =
+                            serde_json::from_value(v.params.unwrap()).unwrap();
+
+                        let mut guard = state.lock().unwrap();
+                        let doc = guard
+                            .documents
+                            .get_mut(&document_formatting_params.text_document.uri)
+                            .unwrap();
+
+                        let text_edits =
+                            Formatter::format_document(&doc.text, &document_formatting_params);
+
+                        let response = Response::<Vec<TextEdit>> {
+                            id: v.id,
+                            jsonrpc: "2.0".to_string(),
+                            result: text_edits,
+                        };
+                        send_message(&response);
+                    }
+                    "textDocument/hover" => {
+                        log!("textDocument/hover");
+                        let hover_params: HoverParams =
+                            serde_json::from_value(v.params.unwrap()).unwrap();
+                        let mut guard = state.lock().unwrap();
+                        let doc = guard
+                            .documents
+                            .get_mut(&hover_params.text_document.uri)
+                            .unwrap();
+
+                        match Scanner::get_tokens(&doc.text) {
+                            Ok(tokens) => {
+                                if let Some(x) = &tokens.iter().find(|token| {
+                                    hover_params.position.line + 1 == token.line
+                                        && hover_params.position.character >= token.start
+                                        && hover_params.position.character < token.end
+                                }) {
+                                    let response = Response::<Hover> {
+                                        id: v.id,
+                                        jsonrpc: "2.0".to_string(),
+                                        result: Hover {
+                                            contents: x.kind.to_hover_text(),
+                                            range: Some(Range {
+                                                start: Position {
+                                                    line: x.line,
+                                                    character: x.start,
+                                                },
+                                                end: Position {
+                                                    line: x.line,
+                                                    character: x.end,
+                                                },
+                                            }),
+                                        },
+                                    };
+                                    send_message(&response);
+                                };
+                            }
+                            Err(e) => log!("Error scanning tokens {}", e),
+                        }
                     }
                     "textDocument/semanticTokens/full" => {
                         log!("textDocument/semanticTokens/full");
@@ -141,7 +245,7 @@ pub fn start() {
                                     prev_line = token.line;
                                     prev_start = token.start;
 
-                                    response_array.push(token.column - token.start);
+                                    response_array.push(token.end - token.start);
                                     response_array.push(test);
                                     response_array.push(0);
                                 }
@@ -166,7 +270,14 @@ pub fn start() {
     });
 
     let diagnostic_thread = thread::spawn(move || loop {
-        thread::sleep(Duration::from_secs(5));
+        thread::sleep(Duration::from_secs(1));
+        let mut has_changed = has_changed_diag.lock().unwrap();
+        if !*has_changed {
+            log!("No changes");
+            continue;
+        }
+        *has_changed = false;
+
         let guard = readonly_state.lock().unwrap();
         for (_, document) in &guard.documents {
             match Parser::parse(&document.text, &document.uri) {
@@ -187,7 +298,13 @@ pub fn start() {
                     send_message(&notification);
                 }
                 Err(e) => {
-                    log!("LSPError - Parsing: {}, {}, cols: {},{}", e, e.line, e.start, e.end);
+                    log!(
+                        "LSPError - Parsing: {}, {}, cols: {},{}",
+                        e,
+                        e.line,
+                        e.start,
+                        e.end
+                    );
                     let params = PublishDiagnosticsParams {
                         diagnostics: vec![Diagnostic {
                             source: Some("sparv-lsp".to_owned()),
@@ -282,8 +399,13 @@ impl Request<InitializeResult> for InitializeRequest {
                 version: Some("0.0.1".to_owned()),
             }),
             capabilities: ServerCapabilities {
+                completion_provider: CompletionOptions {
+                    resolve_provider: false,
+                    trigger_characters: vec![">".to_string(), ".".to_string()],
+                },
                 hover_provider: true,
                 definition_provider: true,
+                document_formatting_provider: true,
                 text_document_sync: 1,
                 code_action_provider: true,
                 text_document_sync_save: true,

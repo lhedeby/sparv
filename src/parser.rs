@@ -27,13 +27,12 @@ impl Parser<'_> {
             }
         }
         // hoist functions
-        decls.sort_by(|a, _| match a {
-            Declaration::Function(..) => std::cmp::Ordering::Less,
-            Declaration::Statement(_) => std::cmp::Ordering::Greater,
-            Declaration::Import(_) => {
-                unreachable!("All import declarations are resolved by this point")
-            }
+        decls.sort_by(|a, b| match (a, b) {
+            (Declaration::Function(..), Declaration::Function(..)) => std::cmp::Ordering::Equal,
+            (Declaration::Function(..), _) => std::cmp::Ordering::Less,
+            (..) => std::cmp::Ordering::Greater,
         });
+
         analysis::run(&decls)?;
         // println!("=== DECLARATIONS ===");
         // for d in &decls {
@@ -78,7 +77,7 @@ impl Parser<'_> {
                     return Err(Error {
                         line: t.line,
                         start: t.start,
-                        end: t.column,
+                        end: t.end,
                         msg: format!("Unexpected token"),
                     });
                 }
@@ -214,7 +213,13 @@ impl Parser<'_> {
         let expr = if self.tokens[self.p].kind != TokenKind::Semicolon {
             self.parse_expr(0)?
         } else {
-            Expr::Null
+            Expr {
+                expr: ExprKind::Null,
+                start_line: 1,
+                start_col: 0,
+                end_line: 1,
+                end_col: 0,
+            }
         };
         self.consume(TokenKind::Semicolon)?;
         Ok(Statement::Return(expr))
@@ -251,7 +256,9 @@ impl Parser<'_> {
         let kind = &self.tokens[self.p].kind.clone();
         self.p += 1;
 
-        let mut left = self.parse_prefix(kind)?.clone();
+        let mut left = self
+            .parse_prefix(kind, self.tokens[self.p - 1].clone())?
+            .clone();
 
         while precedence < infix_precedence(&self.tokens[self.p].kind) {
             let token_kind = self.tokens[self.p].kind.clone();
@@ -261,11 +268,17 @@ impl Parser<'_> {
         Ok(left)
     }
 
-    fn parse_prefix(&mut self, token_kind: &TokenKind) -> Result<Expr> {
+    fn parse_prefix(&mut self, token_kind: &TokenKind, token: Token) -> Result<Expr> {
         match token_kind {
             TokenKind::Plus | TokenKind::Minus | TokenKind::Bang => {
                 let right = self.parse_expr(prefix_precedence(&token_kind))?;
-                Ok(Expr::Prefix(token_kind.clone(), Box::new(right.clone())))
+                Ok(Expr {
+                    expr: ExprKind::Prefix(token_kind.clone(), Box::new(right.clone())),
+                    start_line: 1,
+                    start_col: 0,
+                    end_line: 1,
+                    end_col: 0,
+                })
             }
             TokenKind::LeftBracket => {
                 let mut items = vec![];
@@ -277,16 +290,33 @@ impl Parser<'_> {
                     }
                 }
                 self.consume(TokenKind::RightBracket)?;
-                Ok(Expr::List(items))
+                Ok(Expr {
+                    expr: ExprKind::List(items),
+                    start_line: 1,
+                    start_col: 0,
+                    end_line: 1,
+                    end_col: 0,
+                })
             }
             TokenKind::Identifier(identifier) => {
-                let mut expr = Expr::Variable(identifier.to_string());
+                let mut expr = ExprKind::Variable(identifier.to_string());
+                let expr_line = token.line;
+                let expr_start = token.start;
                 loop {
                     match self.get_kind() {
                         TokenKind::Dot => {
                             self.p += 1;
                             let i = self.consume_identifier()?;
-                            expr = Expr::Get(i, Box::new(expr))
+                            expr = ExprKind::Get(
+                                i,
+                                Box::new(Expr {
+                                    expr,
+                                    start_line: 1,
+                                    start_col: 0,
+                                    end_line: 1,
+                                    end_col: 0,
+                                }),
+                            )
                         }
                         TokenKind::LeftParen => {
                             let line = self.get_token().line;
@@ -302,26 +332,83 @@ impl Parser<'_> {
                                 }
                             }
 
-                            let end = self.get_token().column;
+                            let end = self.get_token().end;
 
                             self.consume(TokenKind::RightParen)?;
-                            expr = Expr::Call(params, Box::new(expr), (line, start, end))
+                            expr = ExprKind::Call(
+                                params,
+                                Box::new(Expr {
+                                    expr,
+                                    start_line: line,
+                                    start_col: start,
+                                    end_line: line,
+                                    end_col: end,
+                                }),
+                            )
                         }
                         TokenKind::LeftBracket => {
                             self.p += 1;
-                            expr = Expr::Index(Box::new(expr), Box::new(self.parse_expr(0)?));
+                            expr = ExprKind::Index(
+                                Box::new(Expr {
+                                    expr,
+                                    start_line: 1,
+                                    start_col: 0,
+                                    end_line: 1,
+                                    end_col: 0,
+                                }),
+                                Box::new(self.parse_expr(0)?),
+                            );
                             self.consume(TokenKind::RightBracket)?;
                         }
                         _ => break,
                     }
                 }
-                Ok(expr)
+                Ok(Expr {
+                    expr,
+                    start_line: expr_line,
+                    start_col: expr_start,
+                    end_line: expr_line,
+                    end_col: self.tokens[self.p-1].end,
+                })
             }
-            TokenKind::Number(f) => Ok(Expr::Number(*f)),
-            TokenKind::String(s) => Ok(Expr::String(s.to_string())),
-            TokenKind::True => Ok(Expr::Bool(true)),
-            TokenKind::False => Ok(Expr::Bool(false)),
-            TokenKind::Null => Ok(Expr::Null),
+            TokenKind::Number(f) => {
+                // println!("token {:?}", token);
+                Ok(Expr {
+                            expr: ExprKind::Number(*f),
+                            start_line: token.line,
+                            start_col: token.start,
+                            end_line: token.line,
+                            end_col: token.end,
+                        })
+            },
+            TokenKind::String(s) => Ok(Expr {
+                expr: ExprKind::String(s.to_string()),
+                start_line: token.line,
+                start_col: token.start,
+                end_line: token.line,
+                end_col: token.end,
+            }),
+            TokenKind::True => Ok(Expr {
+                expr: ExprKind::Bool(true),
+                start_line: token.line,
+                start_col: token.start,
+                end_line: token.line,
+                end_col: token.end,
+            }),
+            TokenKind::False => Ok(Expr {
+                expr: ExprKind::Bool(false),
+                start_line: token.line,
+                start_col: token.start,
+                end_line: token.line,
+                end_col: token.end,
+            }),
+            TokenKind::Null => Ok(Expr {
+                expr: ExprKind::Null,
+                start_line: token.line,
+                start_col: token.start,
+                end_line: token.line,
+                end_col: token.end,
+            }),
             TokenKind::Fun => {
                 self.consume(TokenKind::LeftParen)?;
                 let mut params: Vec<String> = vec![];
@@ -352,7 +439,13 @@ impl Parser<'_> {
                     }
                 }
 
-                Ok(Expr::Function(params, stmts))
+                Ok(Expr {
+                    expr: ExprKind::Function(params, stmts),
+                    start_line: 1,
+                    start_col: 0,
+                    end_line: 1,
+                    end_col: 0,
+                })
             }
             TokenKind::LeftParen => {
                 let expr = self.parse_expr(0);
@@ -367,38 +460,72 @@ impl Parser<'_> {
                     self.consume(TokenKind::Comma)?;
                 }
                 self.consume(TokenKind::RightBrace)?;
-                Ok(Expr::Object(res))
+                Ok(Expr {
+                    expr: ExprKind::Object(res),
+                    start_line: 1,
+                    start_col: 0,
+                    end_line: 1,
+                    end_col: 0,
+                })
             }
             actual => Err(Error {
                 line: self.tokens[self.p - 1].line,
                 start: self.tokens[self.p - 1].start,
-                end: self.tokens[self.p - 1].column,
+                end: self.tokens[self.p - 1].end,
                 msg: format!("Unexpected token '{:?}'", actual),
             }),
         }
     }
 
-    fn parse_infix(&mut self, expr: &Expr, token_kind: TokenKind) -> Result<Expr> {
+    fn parse_infix(
+        &mut self,
+        expr: &Expr,
+        token_kind: TokenKind,
+    ) -> Result<Expr> {
         let right = self.parse_expr(infix_precedence(&token_kind))?;
 
         match token_kind {
-            TokenKind::Equal | TokenKind::PlusEqual | TokenKind::MinusEqual => match expr {
-                Expr::Variable(s) => Ok(Expr::Operator(
-                    Box::new(Expr::String(s.to_string())),
-                    token_kind,
-                    Box::new(right),
-                )),
-                Expr::Get(s, g_expr) => {
-                    Ok(Expr::Set(s.to_string(), g_expr.clone(), Box::new(right)))
-                }
-                Expr::Index(e1, e2) => Ok(Expr::SetList(e1.clone(), e2.clone(), Box::new(right))),
+            TokenKind::Equal | TokenKind::PlusEqual | TokenKind::MinusEqual => match &expr.expr {
+                ExprKind::Variable(s) => Ok(Expr {
+                    expr: ExprKind::Operator(
+                        Box::new(Expr {
+                            expr: ExprKind::String(s.to_string()),
+                            start_line: expr.start_line,
+                            start_col: expr.start_col,
+                            end_line: expr.end_line,
+                            end_col: expr.end_col,
+                        }),
+                        token_kind,
+                        Box::new(right),
+                    ),
+                    start_line: 1,
+                    start_col: 0,
+                    end_line: 1,
+                    end_col: 0,
+                }),
+                ExprKind::Get(s, g_expr) => Ok(Expr {
+                    expr: ExprKind::Set(s.to_string(), g_expr.clone(), Box::new(right)),
+                    start_line: 1,
+                    start_col: 0,
+                    end_line: 1,
+                    end_col: 0,
+                }),
+                ExprKind::Index(e1, e2) => Ok(Expr {
+                    expr: ExprKind::SetList(e1.clone(), e2.clone(), Box::new(right)),
+                    start_line: 1,
+                    start_col: 0,
+                    end_line: 1,
+                    end_col: 0,
+                }),
                 _ => Err(self.err("Invalid assignment".to_string())),
             },
-            _ => Ok(Expr::Operator(
-                Box::new(expr.clone()),
-                token_kind,
-                Box::new(right),
-            )),
+            _ => Ok(Expr {
+                expr: ExprKind::Operator(Box::new(expr.clone()), token_kind, Box::new(right)),
+                start_line: 1,
+                start_col: 0,
+                end_line: 1,
+                end_col: 0,
+            }),
         }
     }
 
@@ -438,7 +565,7 @@ impl Parser<'_> {
         Error {
             line: token.line,
             start: token.start,
-            end: token.column,
+            end: token.end,
             msg: msg.to_string(),
         }
     }
@@ -473,11 +600,9 @@ fn prefix_precedence(_kind: &TokenKind) -> usize {
     9
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub enum Declaration {
     Function(String, Vec<String>, Vec<Statement>),
-    // Let(String, Expr),
     Statement(Statement),
     Import(Vec<Declaration>),
 }
@@ -494,16 +619,17 @@ pub enum Statement {
     Assignment(String, Vec<String>, Expr),
 }
 
-pub struct AnnotatedExpr {
-    pub expr: Expr,
+#[derive(Clone, Debug)]
+pub struct Expr {
+    pub expr: ExprKind,
     pub start_line: usize,
-    pub start_char: usize,
+    pub start_col: usize,
     pub end_line: usize,
-    pub end_char: usize,
+    pub end_col: usize,
 }
 
 #[derive(Clone, Debug)]
-pub enum Expr {
+pub enum ExprKind {
     Prefix(TokenKind, Box<Expr>),
     Operator(Box<Expr>, TokenKind, Box<Expr>),
     Number(f64),
@@ -513,7 +639,10 @@ pub enum Expr {
     Function(Vec<String>, Vec<Statement>),
     Get(String, Box<Expr>),
     Set(String, Box<Expr>, Box<Expr>),
-    Call(Vec<Expr>, Box<Expr>, (usize, usize, usize)),
+    Call(
+        Vec<Expr>,
+        Box<Expr>,
+    ),
     Variable(String),
     Object(Vec<Expr>),
     List(Vec<Expr>),

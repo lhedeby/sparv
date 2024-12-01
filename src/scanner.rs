@@ -253,7 +253,7 @@ impl Scanner<'_> {
         Ok(Token {
             kind,
             line: self.line,
-            column: self.column,
+            end: self.column,
             start: self.column - (self.current - self.start),
         })
     }
