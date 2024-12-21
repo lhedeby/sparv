@@ -6,10 +6,10 @@ from os import listdir
 
 
 def main():
-    proj_path = "./src/krax.csproj"
+    proj_path = "./src/sparv.csproj"
     subprocess.run(["dotnet", "build", proj_path], shell=True, capture_output=True)
 
-    interpreter = "C:/Users/ludwi/repos/krax/src/bin/Debug/net8.0/krax.exe"
+    interpreter = "C:/Users/ludwi/repos/krax/src/bin/Debug/net8.0/sparv.exe"
     test = listdir("./test")
     err_tests = 0
     ok_tests = 0
