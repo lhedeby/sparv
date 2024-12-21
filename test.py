@@ -1,13 +1,14 @@
 import subprocess
 import re
 import itertools
-import json
 from os import listdir
 
 
 
 def main():
-    # build()
+    proj_path = "./src/krax.csproj"
+    subprocess.run(["dotnet", "build", proj_path], shell=True, capture_output=True)
+
     interpreter = "C:/Users/ludwi/repos/krax/src/bin/Debug/net8.0/krax.exe"
     test = listdir("./test")
     err_tests = 0
@@ -28,34 +29,6 @@ def main():
     else:
         print(f"Err: {err_tests}")
         print_ok("All tests Ok!")
-
-def build() -> str:
-    """
-        Builds the rust interpreter and returns the the path
-        to the executable.
-
-        Args:
-            None
-
-        Returns:
-            str: The path to the executable
-    """
-    print("Running dotnet build!")
-    output = subprocess.run(["dotnet", "build"], shell=True, capture_output=True)
-
-    # lines = output.stdout.decode('utf-8').splitlines()
-    # jsons = [json.loads(x) for x in lines]
-    #
-    # build_success = jsons[-1]['success']
-    # if not build_success:
-    #     print_err("Cargo build ERR")
-    #     print(lines)
-    #     exit(1)
-    # interpreter_path = jsons[-2]['executable']
-    # print_ok("Cargo build OK");
-    # return interpreter_path
-    return ""
-
 
 def test_file(interpreter: str, path: str):
     """
@@ -79,7 +52,6 @@ def test_file(interpreter: str, path: str):
         *re.findall("(?<=// expected: ).*", content),
         "successfully ran program"
     ]
-    print(interpreter)
 
     output = subprocess.run([interpreter, path], shell=True, capture_output=True)
     actual = output.stdout.decode('utf-8').splitlines()

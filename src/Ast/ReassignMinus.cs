@@ -3,7 +3,7 @@ public class ReassignMinus(IAstNode lhs, IAstNode rhs) : IAstNode
 {
     public AnalyzerKind Analyze(Analyzer a)
     {
-        throw new NotImplementedException();
+        return AnalyzerKind.Nil;
     }
 
     public object? Interpret(Interpreter inter)

@@ -3,8 +3,8 @@ public class Call(List<IAstNode> paramaters, IAstNode expr, Token token) : IAstN
     public AnalyzerKind Analyze(Analyzer a)
     {
 
-        Console.WriteLine($"analyze call: {expr.Analyze(a)}");
-        Console.WriteLine($"analyze call: {expr}");
+        // Console.WriteLine($"analyze call: {expr.Analyze(a)}");
+        // Console.WriteLine($"analyze call: {expr}");
         if (expr.Analyze(a) is not AnalyzerKind.Function)
             a.AddError(new SparvException("trying to call something that is not a function", token.Line, token.Start, token.End));
         
