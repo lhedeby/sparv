@@ -1,0 +1,7 @@
+typeof(true)->print; // expected: <bool>
+typeof(false)->print; // expected: <bool>
+typeof(1 + 2)->print; // expected: <number>
+typeof("hello")->print; // expected: <string>
+typeof(fun(a, b) a*b)->print; // expected: <function>
+typeof(nil)->print; // expected: <nil>
+typeof([])->print; // expected: <list>

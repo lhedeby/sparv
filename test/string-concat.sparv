@@ -1,0 +1,10 @@
+var s1 = "foo";
+var s2 = "bar";
+
+print(s1 + s2); // expected: foobar
+
+// string concat with different type
+print(s1 + 1); // expected: foo1
+print(s1 + true); // expected: fooTrue
+print(s1 + 1.9); // expected: foo1.9
+print(s1 + nil); // expected: foonil

@@ -1,0 +1,17 @@
+fun f1(p1, p2) {
+    print(p1 + p2);
+}
+
+fun f2(p) {
+    f1(p, p);
+}
+
+fun f3(f, p) {
+    return f(p);
+}
+
+
+f1(2, 5); // expected: 7
+f1("a", "b"); // expected: ab
+f2("c"); // expected: cc
+print(f3(fun(a) a * a, 5)); // expected: 25

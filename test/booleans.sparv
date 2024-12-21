@@ -1,0 +1,23 @@
+print(true); // expected: True
+print(false); // expected: False
+
+print(true == true); // expected: True
+print(true == false); // expected: False
+print(false == true); // expected: False
+print(false == false); // expected: True
+
+print(true and true); // expected: True
+print(true and false); // expected: False
+print(false and false); // expected: False
+print(false and true); // expected: False
+
+print(true or true); // expected: True
+print(true or false); // expected: True
+print(false or false); // expected: False
+print(false or true); // expected: True
+
+print(!true); // expected: False
+print(!false); // expected: True
+
+print(!!true); // expected: True
+print(!!false); // expected: False

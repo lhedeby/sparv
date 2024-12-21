@@ -1,0 +1,11 @@
+print("Hello, World"); // expected: Hello, World
+
+print(1); // expected: 1
+
+print([1,2,3]); // expected: [1, 2, 3]
+
+print(fun() {}); // expected: <function>
+
+print(nil); // expected: nil
+
+print(true); // expected: True

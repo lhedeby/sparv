@@ -1,0 +1,14 @@
+// numbers
+var number = 1;
+number += 5;
+print(number); // expected: 6
+
+// strings
+var str = "foo";
+str += "bar";
+print(str); // expected: foobar
+
+// lists
+var list = [1];
+list += [2, 3];
+print(list); // expected: [1, 2, 3]

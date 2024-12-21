@@ -1,0 +1,6 @@
+for i in 0:3 {
+    print(i);
+}
+// expected: 0
+// expected: 1
+// expected: 2

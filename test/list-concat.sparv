@@ -1,0 +1,11 @@
+var list = [];
+print(list); // expected: []
+
+for i in 0:4 {
+    list = list + [i];
+}
+print(list); // expected: [0, 1, 2, 3]
+
+list = [-1] + list;
+
+print(list); // expected: [-1, 0, 1, 2, 3]

@@ -1,0 +1,31 @@
+
+fun square(a) {
+    return a * a;
+}
+
+fun square_list(list) {
+    for i in 0:len(list) {
+        list[i] = list[i] * list[i];
+    }
+    return list;
+}
+
+fun map(f) {
+    return fun(list) {
+        for i in 0:len(list) {
+            list[i] = f(list[i]);
+        }
+        return list;
+    };
+}
+
+fun push(i) {
+    return fun(list) {
+        return list + [i];
+    };
+}
+
+3->square->print; // expected: 9
+[1, 2, 3]->square_list->print; // expected: [1, 4, 9]
+[1, 2, 3]->map(fun(a) a+a)->print; // expected: [2, 4, 6]
+[1, 2, 3]->push(4)->print; // expected: [1, 2, 3, 4]
