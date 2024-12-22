@@ -8,6 +8,9 @@ public class Formatter
     private int _line;
     private int _p;
     private bool _arrowIndent;
+    private List<(int line, int p)> _pipes;
+    private bool _isMatch;
+    private List<TextEdit> _textEdits;
     private StreamWriter _writer;
 
     private Formatter(string text, StreamWriter writer)
@@ -19,6 +22,14 @@ public class Formatter
         _p = 0;
         _lines = _text.Replace("\r", "").Split("\n");
         _arrowIndent = false;
+        _isMatch = false;
+        _pipes = new();
+        _textEdits = new();
+    }
+
+    public void AddTextEdit(int line, int start, int end, string text)
+    {
+        _textEdits.Add(TextEdit(line, start, end, text));
     }
 
     public static List<TextEdit> TextEdits(string text, StreamWriter writer)
@@ -29,7 +40,7 @@ public class Formatter
 
     private List<TextEdit> Format()
     {
-        var textEdits = new List<TextEdit>();
+        // var textEdits = new List<TextEdit>();
         var lines = _text.Replace("\r", "").Split("\n");
 
 
@@ -41,7 +52,8 @@ public class Formatter
             {
                 // Remove whitespace if the line is empty
                 if (_p > 0)
-                    textEdits.Add(TextEdit(_line, 0, _p, ""));
+                    AddTextEdit(_line, 0, _p, "");
+                // textEdits.Add(TextEdit(_line, 0, _p, ""));
 
                 continue;
             }
@@ -51,35 +63,40 @@ public class Formatter
 
             var indent = _arrowIndent ? _indent + INDENT_SIZE : _indent;
             if (indent != _p)
-                textEdits.Add(TextEdit(_line, 0, _p, new string(' ', indent)));
+                AddTextEdit(_line, 0, _p, new string(' ', indent));
+            // textEdits.Add(TextEdit(_line, 0, _p, new string(' ', indent)));
             var firstChar = _p;
 
             while (!AtEndOfLine())
             {
-                var textEdit = CurrentChar() switch
+                _writer.Log($"p:{_p}");
+                switch (CurrentChar())
                 {
-                    '{' => OpenBrace(),
-                    '}' => ClosingBrace(firstChar == _p),
-                    '[' => OpenBracket(),
-                    ']' => ClosingBracket(),
-                    ';' => Semicolon(),
-                    ' ' => WhiteSpace(),
-                    ',' => Comma(),
-                    '-' => Arrow(),
-                    _ => Advance()
+                    case '|': Pipe(); break;
+                    case '{': OpenBrace(); break;
+                    case '}': ClosingBrace(firstChar == _p); break;
+                    case '[': OpenBracket(); break;
+                    case ']': ClosingBracket(); break;
+                    case ';': Semicolon(); break;
+                    case ' ': WhiteSpace(); break;
+                    case ',': Comma(); break;
+                    case '-': Arrow(); break;
+                    default: Advance(); break;
                 };
-                if (textEdit is not null)
-                    textEdits.Add(textEdit);
+                // if (textEdit is not null)
+                //     textEdits.Add(textEdit);
             }
 
         }
-        foreach (var te in textEdits)
-            _writer.Log($"TextEdits {te}");
+        // foreach (var te in textEdits)
+        //     _writer.Log($"TextEdits {te}");
 
-        return textEdits;
+        // return textEdits;
+        return _textEdits;
     }
 
-    private TextEdit? Arrow()
+
+    private void Arrow()
     {
         _p++;
         if (!AtEndOfLine() && CurrentChar() == '>')
@@ -90,79 +107,102 @@ public class Formatter
             ConsumeWhiteSpace();
             var end = _p;
             if (start != end)
-                return TextEdit(_line, start, end, NewLine());
+                AddTextEdit(_line, start, end, NewLine());
         }
-        return null;
     }
 
-    private TextEdit? OpenBracket()
+    private void OpenBracket()
     {
         _p++;
         IncreaseIndent();
-        return null;
     }
 
-    private TextEdit? ClosingBracket()
+    private void ClosingBracket()
     {
         _p++;
         DecreaseIndent();
-        return null;
     }
 
-    private TextEdit? OpenBrace()
+    private void ResolvePipes()
+    {
+        _isMatch = false;
+        var pMax = 0;
+        foreach (var pipe in _pipes)
+        {
+            pMax = Math.Max(pipe.p, pMax);
+        }
+        foreach (var pipe in _pipes)
+        {
+            if (pipe.p != pMax)
+            {
+                AddTextEdit(pipe.line, pipe.p, pipe.p, new string(' ', pMax-pipe.p));
+                _writer.Log("adding a thing");
+            }
+        }
+    }
+
+    private void Pipe()
+    {
+        _isMatch = true;
+        _pipes.Add((_line, _p));
+        _p++;
+    }
+
+    private void OpenBrace()
     {
         IncreaseIndent();
         _p++;
         if (AtEndOfLine())
-            return null;
+            return;
         var start = _p;
         ConsumeWhiteSpace();
-        return TextEdit(_line, start, _p, NewLine());
+        AddTextEdit(_line, start, _p, NewLine());
     }
-    private TextEdit? ClosingBrace(bool isFirstChar)
+    private void ClosingBrace(bool isFirstChar)
     {
-        _writer.Log($"closing brace isFirstchar {isFirstChar}");
+
+        ResolvePipes();
         var start = _p;
         _p++;
-        if (isFirstChar) return null;
+        if (isFirstChar) return;
         DecreaseIndent();
-        if (AtEndOfLine()) return null;
-        return TextEdit(_line, start, start, NewLine());
+        if (AtEndOfLine()) return;
+        AddTextEdit(_line, start, start, NewLine());
     }
 
-    private TextEdit? Semicolon()
+    private void Semicolon()
     {
         _p++;
         _arrowIndent = false;
         if (AtEndOfLine())
-            return null;
+            return;
         var start = _p;
         ConsumeWhiteSpace();
         if (start != _p)
-            return TextEdit(_line, start, _p, AtEndOfLine() ? "" : NewLine());
-        return null;
+            AddTextEdit(_line, start, _p, AtEndOfLine() ? "" : NewLine());
     }
 
-    private TextEdit? WhiteSpace()
+    private void WhiteSpace()
     {
         _p++;
         if (AtEndOfLine())
-            return null;
+            return;
         if (CurrentChar() != ' ')
-            return null;
+            return;
         var start = _p;
         ConsumeWhiteSpace();
-        return TextEdit(_line, start, _p, "");
+        if (CurrentChar() == '|')
+            return;
+        AddTextEdit(_line, start, _p, "");
     }
 
-    private TextEdit? Comma()
+    private void Comma()
     {
         _p++;
         if (AtEndOfLine())
-            return null;
+            return;
         if (CurrentChar() != ' ')
-            return TextEdit(_line, _p, _p, " ");
-        return null;
+            AddTextEdit(_line, _p, _p, " ");
     }
 
 
@@ -179,10 +219,9 @@ public class Formatter
     private char CurrentChar() => _lines[_line][_p];
     private string NewLine() => $"{Environment.NewLine}{new string(' ', _indent)}";
 
-    private TextEdit? Advance()
+    private void Advance()
     {
         _p++;
-        return null;
     }
 
     private TextEdit TextEdit(int line, int start, int end, string text) => new(new(new(line, start), new(line, end)), text);

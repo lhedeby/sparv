@@ -82,6 +82,7 @@ class Scanner
             '*' => MakeToken(TokenKind.Star),
             ':' => MakeToken(TokenKind.Colon),
             '%' => MakeToken(TokenKind.Percent),
+            '|' => MakeToken(TokenKind.Pipe),
             '-' => MakeToken(TwoCharTokens(c, TokenKind.Minus)),
             '+' => MakeToken(TwoCharTokens(c, TokenKind.Plus)),
             '!' => MakeToken(TwoCharTokens(c, TokenKind.Bang)),
@@ -131,6 +132,7 @@ class Scanner
             "fun" => TokenKind.Fun,
             "in" => TokenKind.In,
             "import" => TokenKind.Import,
+            "match" => TokenKind.Match,
             _ => TokenKind.Identifier
         };
     }
@@ -223,6 +225,7 @@ public enum TokenKind
     Star,
     Colon,
     Percent,
+    Pipe,
     // One or two character tokens.
     Bang,
     BangEqual,
@@ -254,6 +257,7 @@ public enum TokenKind
     In,
     While,
     Import,
+    Match,
     EndOfFile,
     // Comments
     Comment,

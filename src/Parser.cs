@@ -332,6 +332,7 @@ public class Parser
             TokenKind.Fun => Function(),
             TokenKind.LeftParen => Grouping(),
             TokenKind.LeftBrace => Obj(),
+            TokenKind.Match => Match(),
             _ => throw new SparvException($"Unexcepted token '{token.Kind}'", token.Line, token.Start, token.End)
         };
     }
@@ -353,6 +354,25 @@ public class Parser
     };
 
     private int PrefixPrecedence() => 9;
+
+    private IAstNode Match()
+    {
+        var expr = ParseExpr(0);
+        Consume(TokenKind.LeftBrace);
+        var arms = new List<(IAstNode lhs, IAstNode rhs)>();
+        while (CurrentTokenKind() != TokenKind.RightBrace)
+        {
+            Console.WriteLine("while start");
+            var lhs = ParseExpr(0);
+            Consume(TokenKind.Pipe);
+            var rhs = ParseExpr(0);
+            Consume(TokenKind.Comma);
+            Console.WriteLine($"e {lhs} - rhs {rhs}");
+            arms.Add((lhs, rhs));
+        }
+        Consume(TokenKind.RightBrace);
+        return new Match(expr, arms);
+    }
 
     private IAstNode Obj()
     {
