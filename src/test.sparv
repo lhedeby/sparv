@@ -1,3 +1,41 @@
-var number = 1;
-number -= 5;
-print(number); // expected: -4
+fun test(an_object) {
+    an_object.add_to_list("hello?");
+}
+
+var my_obj = {
+    list: [],
+    add_to_list: fun(item) {
+        print(my_obj);
+        my_obj.list = my_obj.list + [item];
+    },
+};
+
+my_obj.add_to_list(123);
+test(my_obj);
+
+print(my_obj);
+
+
+var new = {};
+var key = "asd";
+
+var list = [];
+list += [123];
+print(list);
+
+fun blink_with_cache(list, cache, ii) {
+    var res = [];
+    for n in list {
+        var t = test_n(n);
+        for bla in t {
+            if cache.[bla+""] == nil {
+                cache.[bla+""] = [ii];
+                res += [bla];
+            } else {
+                cache.[bla+""] += [ii];
+            }
+        }
+    }
+    print("cache: " + cache);
+    return res;
+}

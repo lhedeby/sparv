@@ -1,7 +1,7 @@
 public record class ServerCapabilities(
     CompletionOptions CompletionProvider,
     bool DocumentFormattingProvider,
-    // bool HoverProvider,
+    bool HoverProvider,
     // bool DefinitionProvider,
     // bool CodeActionProvider,
     int TextDocumentSync,

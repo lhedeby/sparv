@@ -72,6 +72,7 @@ public class LspServer
                     {
                         var parser = new Parser(doc.Text);
                         parser.Parse();
+                        _state.Tokens = parser.Tokens;
                         _state.Suggestions = parser.Analyzer!.Vars;
                         Log($"Document {uri} has {parser.Errors.Count} errors");
                         var diagnostics = parser.Errors.Select(e =>

@@ -1,18 +1,18 @@
 
-public class RangeList(IAstNode lhs, IAstNode rhs) : IAstNode
+public class RangeList(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
 {
     public AnalyzerKind Analyze(Analyzer a)
     {
-        throw new NotImplementedException();
+        return AnalyzerKind.List;
     }
 
     public object? Interpret(Interpreter inter)
     {
 
         if (lhs.Interpret(inter) is not double start)
-            throw new Exception("TODO: Start of range must be a number");
+            throw new SparvException("Start of range must be a number", token);
         if (rhs.Interpret(inter) is not double end)
-            throw new Exception("TODO: Start of range must be a number");
+            throw new SparvException("End of range must be a number", token);
 
 
         // TODO: Just do something better

@@ -3,7 +3,7 @@ public class Return(IAstNode expr) : IAstNode
 {
     public AnalyzerKind Analyze(Analyzer a)
     {
-        throw new NotImplementedException();
+        return expr.Analyze(a);
     }
 
     public object? Interpret(Interpreter inter)

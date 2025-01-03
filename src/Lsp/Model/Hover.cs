@@ -1,1 +1,1 @@
-public record class Hover(string Contents, Range? Range);
+public record class Hover(MarkupContent Contents, Range? Range);

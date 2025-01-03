@@ -210,11 +210,17 @@ public record Token(TokenKind Kind, string Value, int Line, int Start, int End);
 public enum TokenKind
 {
     // Single-character tokens.
+    /// <summary> TokenKind: ( </summary>
     LeftParen,
+    /// <summary> TokenKind: ) </summary>
     RightParen,
+    /// <summary> TokenKind: [ </summary>
     LeftBracket,
+    /// <summary> TokenKind: ] </summary>
     RightBracket,
+    /// <summary> TokenKind: { </summary>
     LeftBrace,
+    /// <summary> TokenKind: } </summary>
     RightBrace,
     Comma,
     Dot,

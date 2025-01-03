@@ -21,19 +21,14 @@ public record class CompletionParams(CompletionContext Context) : IClientRequest
 
             );
         }
-        list.Add(
-            new CompletionItem()
-            {
-                Label = "print",
-                Kind = CompletionItemKind.Function,
-                LabelDetails = new("Built-in function", null),
-                Detail = "'input' print(string | object)",
-                Documentation = new(
-                    "markdown",
-                    "# `print`\n\nPrints a message to the console.\n\n# **Signature**\n```plaintext\nvoid print_(string message)\n```\n\n#### **Parameters**\n- `message` *(string)*: The text to print to the console.\n\n#### **Example**\n```lox\nprint_(\"Hello, world!\");\n```\n"),
-                InsertText = "print($1)",
-                InsertTextFormat = InsertTextFormat.Snippet
-            });
+        list.Add(Documentation.Print().ToCompletionItem());
+        list.Add(Documentation.Split().ToCompletionItem());
+        list.Add(Documentation.ReadFile().ToCompletionItem());
+        list.Add(Documentation.Len().ToCompletionItem());
+        list.Add(Documentation.Parse().ToCompletionItem());
+        list.Add(Documentation.Typeof().ToCompletionItem());
+        list.Add(Documentation.ReadInput().ToCompletionItem());
         return list;
     }
 }
+

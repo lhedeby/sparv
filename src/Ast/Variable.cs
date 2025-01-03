@@ -12,7 +12,11 @@ public class Variable : IAstNode
 
     public AnalyzerKind Analyze(Analyzer a)
     {
-        return a.Vars.FirstOrDefault(x => x.Item1 == _name).Item2;
+        if (a.Vars.Any(x => x.Item1 == _name)) {
+            return a.Vars.First(x => x.Item1 == _name).Item2;
+        }
+        a.AddError(new SparvException("Variable is not delcared", _token.Line, _token.Start, _token.End));
+        return AnalyzerKind.Nil;
     }
 
     public object? Interpret(Interpreter inter)

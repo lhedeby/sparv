@@ -11,7 +11,7 @@ public class Subtract : IAstNode
 
     public AnalyzerKind Analyze(Analyzer a)
     {
-        throw new NotImplementedException();
+        return AnalyzerKind.Number;
     }
 
     public object? Interpret(Interpreter inter)

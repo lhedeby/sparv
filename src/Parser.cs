@@ -4,6 +4,7 @@ public class Parser
     private List<Token> _tokens;
     private string _source;
     public string Source => _source;
+    public List<Token> Tokens => _tokens;
     public List<SparvException> Errors { get; set; }
     public bool HasErrors { get => Errors.Count > 0; }
     public Analyzer? Analyzer { get; set; }
@@ -198,6 +199,7 @@ public class Parser
 
     private IAstNode For()
     {
+        var forToken = CurrentToken();
         Consume(TokenKind.For);
         var identifier = CurrentToken();
         Consume(TokenKind.Identifier);
@@ -210,7 +212,7 @@ public class Parser
             stmts.Add(ParseStmt());
         Consume(TokenKind.RightBrace);
 
-        return new For(identifier.Value, expr, stmts);
+        return new For(identifier.Value, expr, stmts, forToken);
     }
 
     /*
@@ -240,8 +242,8 @@ public class Parser
     private IAstNode ParseInfix(IAstNode lhs, Token token)
     {
         if (token.Kind == TokenKind.LeftParen) return Call(lhs, token);
-        if (token.Kind == TokenKind.LeftBracket) return Index(lhs);
-        if (token.Kind == TokenKind.Dot) return GetOrSet(lhs);
+        if (token.Kind == TokenKind.LeftBracket) return Index(lhs, token);
+        if (token.Kind == TokenKind.Dot) return GetOrSet(lhs, token);
         var rhs = ParseExpr(InfixPrecedence(token.Kind));
         return token.Kind switch
         {
@@ -250,18 +252,18 @@ public class Parser
             TokenKind.BangEqual => new NotEqual(lhs, rhs),
             TokenKind.EqualEqual => new Equal(lhs, rhs),
             TokenKind.Greater => new Greater(lhs, rhs),
-            TokenKind.GreaterEqual => new GreaterEqual(lhs, rhs),
+            TokenKind.GreaterEqual => new GreaterEqual(lhs, rhs, token),
             TokenKind.Less => new Less(lhs, rhs),
             TokenKind.LessEqual => new LessEqual(lhs, rhs),
-            TokenKind.Star => new Multiply(lhs, rhs),
+            TokenKind.Star => new Multiply(lhs, rhs, token),
             TokenKind.Slash => new Divide(lhs, rhs),
             TokenKind.Percent => new Modulo(lhs, rhs),
             TokenKind.Plus => new Add(lhs, rhs),
             TokenKind.Minus => new Subtract(lhs, rhs),
-            TokenKind.Equal => new Reassign(lhs, rhs),
-            TokenKind.PlusEqual => new ReassignPlus(lhs, rhs),
-            TokenKind.MinusEqual => new ReassignMinus(lhs, rhs),
-            TokenKind.Colon => new RangeList(lhs, rhs),
+            TokenKind.Equal => new Reassign(lhs, rhs, token),
+            TokenKind.PlusEqual => new ReassignPlus(lhs, rhs, token),
+            TokenKind.MinusEqual => new ReassignMinus(lhs, rhs, token),
+            TokenKind.Colon => new RangeList(lhs, rhs, token),
             // TokenKind.Dot => GetOrSet(lhs, rhs),
             // TODO: Should we just parse arrows as double call?
             TokenKind.Arrow => ArrowCall(lhs, rhs, token),
@@ -269,24 +271,52 @@ public class Parser
         };
     }
 
-    private IAstNode GetOrSet(IAstNode lhs)
+    private IAstNode GetOrSet(IAstNode lhs, Token token)
     {
-        var identifier = CurrentToken().Value;
-        Consume(TokenKind.Identifier);
+        var expr = CurrentTokenKind() switch
+        {
+            TokenKind.LeftBracket => DotBracket(),
+            TokenKind.Identifier => DotIdentifier(),
+            _ => throw new SparvException("Expected Identifier or indexer.", CurrentToken())
+        };
+
+        // if (CurrentTokenKind() == TokenKind.LeftBracket)
+        // {
+        //     Consume(TokenKind.LeftBracket);
+        //     var e = ParseExpr(0);
+        //     Consume(TokenKind.RightBracket);
+        // }
+        // var identifier = CurrentToken().Value;
+        // Consume(TokenKind.Identifier);
         if (CurrentTokenKind() == TokenKind.Equal)
         {
             Consume(TokenKind.Equal);
-            return new Set(lhs, identifier, ParseExpr(0));
+            return new Set(lhs, expr, ParseExpr(0));
         }
         else
-            return new Get(lhs, identifier);
+            return new Get(lhs, expr, token);
     }
 
-    private IAstNode Index(IAstNode lhs)
+    private IAstNode DotIdentifier()
+    {
+        var node = new StringNode(CurrentToken().Value);
+        Consume(TokenKind.Identifier);
+        return node;
+    }
+
+    private IAstNode DotBracket()
+    {
+        Consume(TokenKind.LeftBracket);
+        var expr = ParseExpr(0);
+        Consume(TokenKind.RightBracket);
+        return expr;
+    }
+
+    private IAstNode Index(IAstNode lhs, Token token)
     {
         var rhs = ParseExpr(0);
         Consume(TokenKind.RightBracket);
-        return new Index(lhs, rhs);
+        return new Index(lhs, rhs, token);
     }
 
     private IAstNode ArrowCall(IAstNode lhs, IAstNode rhs, Token token)
@@ -362,12 +392,10 @@ public class Parser
         var arms = new List<(IAstNode lhs, IAstNode rhs)>();
         while (CurrentTokenKind() != TokenKind.RightBrace)
         {
-            Console.WriteLine("while start");
             var lhs = ParseExpr(0);
             Consume(TokenKind.Pipe);
             var rhs = ParseExpr(0);
             Consume(TokenKind.Comma);
-            Console.WriteLine($"e {lhs} - rhs {rhs}");
             arms.Add((lhs, rhs));
         }
         Consume(TokenKind.RightBrace);

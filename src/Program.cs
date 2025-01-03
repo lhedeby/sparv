@@ -16,14 +16,7 @@ if (parser.HasErrors)
 {
     foreach (var e in parser.Errors)
     {
-        var lines = parser.Source.Split('\n');
-        var maxLen = e.Line.ToString().Length + 2;
-        Console.WriteLine($"{(e.Line - 1).ToString().PadRight(maxLen)}| ...");
-        Console.WriteLine($"{"".PadLeft(maxLen)}|");
-        Console.WriteLine($"{e.Line.ToString().PadRight(maxLen)}| {lines[e.Line]}");
-        Console.WriteLine($"{"".PadRight(maxLen)}|{"".PadLeft(e.Start + 1)}{"".PadRight(e.End - e.Start, '^')}");
-        Console.WriteLine($"{(e.Line + 1).ToString().PadRight(maxLen)}| ...");
-        Console.WriteLine($">>> {e} at {e.Line}:{e.Start}");
+        e.PrintError(parser.Source);
     }
     return;
 }
@@ -50,7 +43,14 @@ if (parser.HasErrors)
 
 
 var interpreter = new Interpreter();
-root.Interpret(interpreter);
+try
+{
+    root.Interpret(interpreter);
+}
+catch (SparvException se)
+{
+    se.PrintError(parser.Source);
+}
 // try
 // {
 //     var root = parser.Parse();

@@ -12,9 +12,58 @@ public class NativeFunctions
             "read_file" => new ReadFile(parameters, v.Token),
             "split" => new Split(parameters, v.Token),
             "parse" => new Parse(parameters, v.Token),
+            "read_input" => new ReadInput(parameters, v.Token),
+            "abs" => new Abs(parameters, v.Token),
             _ => null
 
         };
+    }
+}
+
+public class Abs : IAstNode {
+
+    IAstNode _parameter;
+    public Abs(List<IAstNode> parameters, Token token)
+    {
+        if (parameters.Count != 1)
+            throw new SparvException("abs() takes 1 argument", token);
+
+        _parameter = parameters.First();
+    }
+
+    public AnalyzerKind Analyze(Analyzer a)
+    {
+        return AnalyzerKind.String;
+    }
+
+    public object? Interpret(Interpreter inter)
+    {
+        return _parameter.Interpret(inter) switch
+        {
+            double s => double.Abs(s),
+            int s => int.Abs(s),
+            _ => throw new Exception("Abs must be number")
+        };
+    }
+}
+
+public class ReadInput : IAstNode
+{
+    public ReadInput(List<IAstNode> parameters, Token token)
+    {
+        
+        if (parameters.Count > 0)
+            throw new SparvException("read_input() takes no arguments", token);
+    }
+
+    public AnalyzerKind Analyze(Analyzer a)
+    {
+        return AnalyzerKind.String;
+    }
+
+    public object? Interpret(Interpreter inter)
+    {
+        return Console.ReadLine();
     }
 }
 
@@ -23,7 +72,7 @@ public class Parse : IAstNode
     IAstNode _parameter;
     public Parse(List<IAstNode> parameters, Token token)
     {
-        if (parameters.Count != 1) 
+        if (parameters.Count != 1)
             throw new SparvException("parse() only take 1 parameter", token.Line, token.Start, token.End);
         _parameter = parameters.First();
     }
@@ -38,6 +87,7 @@ public class Parse : IAstNode
             _ => throw new Exception("trying to parse something thats not a string")
         };
     }
+
 }
 
 public class Split : IAstNode
@@ -50,7 +100,7 @@ public class Split : IAstNode
         _parameters = parameters;
     }
 
-    public AnalyzerKind Analyze(Analyzer a) => AnalyzerKind.String;
+    public AnalyzerKind Analyze(Analyzer a) => AnalyzerKind.List;
 
     public object? Interpret(Interpreter inter)
     {
@@ -127,6 +177,7 @@ public class Len : IAstNode
     {
         RuntimeList l => (double)l.list.Count,
         string s => (double)s.Length,
+        RuntimeObject o => (double)o.obj.Count,
         _ => throw new Exception("TODO: cant len")
     };
 

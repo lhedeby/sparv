@@ -17,9 +17,15 @@ public class Analyzer
     }
 
     public List<SparvException> Errors { get => _errors; }
+    
     public bool HasErrors { get => _errors.Count > 0; }
     public void AddError(SparvException e) => _errors.Add(e);
     public void AddVar(string s, AnalyzerKind kind) => _variables.Last().Add(s, kind);
+
+    // TODO: How to handle scopes?
+    public void BeginScope() => _variables.Add(new());
+    public void EndScope() => _variables.RemoveAt(_variables.Count - 1);
+
     public bool VarExists(string key) => Get(key) is not null;
     public List<(string, AnalyzerKind)> Vars =>
         _variables

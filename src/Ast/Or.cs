@@ -3,7 +3,7 @@ public class Or(IAstNode lhs, IAstNode rhs) : IAstNode
 {
     public AnalyzerKind Analyze(Analyzer a)
     {
-        throw new NotImplementedException();
+        return AnalyzerKind.Bool;
     }
 
     public object? Interpret(Interpreter inter)

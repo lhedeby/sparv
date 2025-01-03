@@ -5,6 +5,10 @@ public class StringNode : IAstNode
     {
         _value = token.Value[1..(token.Value.Length - 1)];
     }
+    public StringNode(string s)
+    {
+        _value = s;
+    }
 
     public AnalyzerKind Analyze(Analyzer a) => AnalyzerKind.String;
 

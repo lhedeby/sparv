@@ -16,6 +16,7 @@ public record class InitializeParams(
             new ServerCapabilities(
                 new([">", "."], false),
                 true,
+                true,
                 1,
                 new SemanticTokensOptions(
                     new([

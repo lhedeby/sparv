@@ -10,7 +10,7 @@ public class Greater : IAstNode
 
     public AnalyzerKind Analyze(Analyzer a)
     {
-        throw new NotImplementedException();
+        return AnalyzerKind.Bool;
     }
 
     public object? Interpret(Interpreter inter)

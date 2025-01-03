@@ -2,7 +2,7 @@ public class Obj(Dictionary<string, IAstNode> dict) : IAstNode
 {
     public AnalyzerKind Analyze(Analyzer a)
     {
-        throw new NotImplementedException();
+        return AnalyzerKind.Object;
     }
 
     public object? Interpret(Interpreter inter)

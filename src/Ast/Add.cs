@@ -1,4 +1,3 @@
-
 public class Add : IAstNode
 {
     IAstNode _lhs;

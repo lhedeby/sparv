@@ -1,25 +1,18 @@
-public class Call(List<IAstNode> paramaters, IAstNode expr, Token token) : IAstNode
+public class Call(List<IAstNode> parameters, IAstNode expr, Token token) : IAstNode
 {
     public AnalyzerKind Analyze(Analyzer a)
     {
-
-        // Console.WriteLine($"analyze call: {expr.Analyze(a)}");
-        // Console.WriteLine($"analyze call: {expr}");
-        if (expr.Analyze(a) is not AnalyzerKind.Function)
-            a.AddError(new SparvException("trying to call something that is not a function", token.Line, token.Start, token.End));
-        
         return AnalyzerKind.Nil;
     }
 
     public object? Interpret(Interpreter inter)
     {
-        var f = expr.Interpret(inter) as RuntimeFunc;
-        // TODO: Is this correct?
-        if (f is null)
-            throw new Exception("TODO: trying to call something that is not a function.");
+        if (expr.Interpret(inter) is not RuntimeFunc f)
+            throw new SparvException("trying to call something that is not a function", token.Line, token.Start, token.End);
         // TODO: Check this in the analysis
-        if (f.parameters.Count != paramaters.Count)
-            throw new Exception("Wrong amount of parameters");
+        if (f.parameters.Count != parameters.Count)
+            throw new SparvException("Wrong amount of parameters in function call", token);
+        var resolved_params = parameters.Select(p => p.Interpret(inter)).ToList();
 
         inter.BeginScope();
         foreach (var (key, value) in f.scope)
@@ -27,9 +20,9 @@ public class Call(List<IAstNode> paramaters, IAstNode expr, Token token) : IAstN
             inter.AddVar(key, value);
         }
         inter.BeginScope();
-        foreach (var (key, value) in f.parameters.Zip(paramaters))
+        foreach (var (key, value) in f.parameters.Zip(resolved_params))
         {
-            inter.AddVar(key, value.Interpret(inter));
+            inter.AddVar(key, value);
         }
         f.stmts.Run(inter);
         // TODO: Probably remove this double scope
@@ -46,10 +39,7 @@ public class Call(List<IAstNode> paramaters, IAstNode expr, Token token) : IAstN
 
     public override string ToString()
     {
-        return $"(call([{string.Join(',', paramaters)}], {expr}))";
+        return $"(call([{string.Join(',', parameters)}], {expr}))";
     }
 
 }
-
-
-

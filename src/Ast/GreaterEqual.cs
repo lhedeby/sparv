@@ -1,30 +1,20 @@
-public class GreaterEqual : IAstNode
+public class GreaterEqual(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
 {
-    IAstNode _lhs;
-    IAstNode _rhs;
-    public GreaterEqual(IAstNode lhs, IAstNode rhs)
-    {
-        _lhs = lhs;
-        _rhs = rhs;
-    }
-
     public AnalyzerKind Analyze(Analyzer a)
     {
-        throw new NotImplementedException();
+        return AnalyzerKind.Bool;
     }
 
     public object? Interpret(Interpreter inter)
     {
-        var lhs = _lhs.Interpret(inter);
-        var rhs = _rhs.Interpret(inter);
-        if (lhs is not double) throw new Exception("TODO: lhs not number");
-        if (rhs is not double) throw new Exception("TODO: rhs not number");
-        return (double)lhs >= (double)rhs;
+        if (lhs.Interpret(inter) is not double d1) throw new SparvException("Left hand side of this is not a number", token);
+        if (rhs.Interpret(inter) is not double d2) throw new SparvException("Right hand side of this is not a number", token);
+        return d1 >= d2;
     }
 
     public override string ToString()
     {
-        return $"({_lhs} >= {_rhs})";
+        return $"({lhs} >= {rhs})";
     }
 }
 

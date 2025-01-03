@@ -1,4 +1,4 @@
-public class Reassign(IAstNode lhs, IAstNode rhs) : IAstNode
+public class Reassign(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
 {
     public AnalyzerKind Analyze(Analyzer a)
     {
@@ -29,12 +29,14 @@ public class Reassign(IAstNode lhs, IAstNode rhs) : IAstNode
         }
         if (lhs is Index index)
         {
-            var l = index.List.Interpret(inter) as RuntimeList;
+            if (index.List.Interpret(inter) is not RuntimeList l)
+                throw new SparvException($"Trying to index something that is not a list", token);
+
             var indexer = index.Indexer.Interpret(inter) switch
             {
                 int i => i,
                 double d => (int)d,
-                _ => throw new Exception("sad")
+                _ => throw new Exception("Not a valid indexer")
             };
 
             var res = rhs.Interpret(inter);

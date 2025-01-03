@@ -1,4 +1,4 @@
-public class Index(IAstNode list, IAstNode index) : IAstNode
+public class Index(IAstNode list, IAstNode index, Token token) : IAstNode
 {
     public object? Interpret(Interpreter inter)
     {
@@ -13,7 +13,7 @@ public class Index(IAstNode list, IAstNode index) : IAstNode
         {
             RuntimeList list => list.list[(int)i],
             string s => s[(int)i].ToString(),
-            _ => throw new Exception("TODO: Index Err")
+            _ => throw new SparvException("Trying to index something that should not be indexed", token)
         };
     }
 
@@ -27,7 +27,11 @@ public class Index(IAstNode list, IAstNode index) : IAstNode
 
     public AnalyzerKind Analyze(Analyzer a)
     {
-        throw new NotImplementedException();
+        var kind = list.Analyze(a);
+        // TODO
+        // if (kind is not AnalyzerKind.List or AnalyzerKind.String)
+        //     a.AddError(new SparvException("Trying to index something that is not a list or string at", token));
+        return kind;
     }
 }
 
