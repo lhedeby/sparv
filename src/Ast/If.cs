@@ -1,6 +1,6 @@
 public class If(IAstNode expr, List<IAstNode> ifStmts, List<IAstNode> elseStmts) : IAstNode
 {
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
         a.BeginScope();
         foreach (var stmt in ifStmts)
@@ -10,7 +10,6 @@ public class If(IAstNode expr, List<IAstNode> ifStmts, List<IAstNode> elseStmts)
         foreach (var stmt in elseStmts)
             stmt.Analyze(a);
         a.EndScope();
-        return AnalyzerKind.Nil;
     }
 
     public object? Interpret(Interpreter inter)

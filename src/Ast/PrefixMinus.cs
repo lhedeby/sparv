@@ -7,9 +7,8 @@ public class PrefixMinus : IAstNode
         _node = node;
     }
 
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        return AnalyzerKind.Number;
     }
 
     public object? Interpret(Interpreter inter)

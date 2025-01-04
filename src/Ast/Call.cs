@@ -1,8 +1,7 @@
 public class Call(List<IAstNode> parameters, IAstNode expr, Token token) : IAstNode
 {
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        return AnalyzerKind.Nil;
     }
 
     public object? Interpret(Interpreter inter)

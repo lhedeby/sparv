@@ -1,9 +1,8 @@
 
 public class Or(IAstNode lhs, IAstNode rhs) : IAstNode
 {
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        return AnalyzerKind.Bool;
     }
 
     public object? Interpret(Interpreter inter)

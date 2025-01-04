@@ -1,4 +1,3 @@
-
 public class Modulo : IAstNode
 {
     IAstNode _lhs;
@@ -9,9 +8,8 @@ public class Modulo : IAstNode
         _rhs = rhs;
     }
 
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        return AnalyzerKind.Number;
     }
 
     public object? Interpret(Interpreter inter)

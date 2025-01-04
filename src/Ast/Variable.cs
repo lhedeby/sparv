@@ -10,13 +10,10 @@ public class Variable : IAstNode
     public string Name { get => _name; }
     public Token Token { get => _token; }
 
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        if (a.Vars.Any(x => x.Item1 == _name)) {
-            return a.Vars.First(x => x.Item1 == _name).Item2;
-        }
-        a.AddError(new SparvException("Variable is not delcared", _token.Line, _token.Start, _token.End));
-        return AnalyzerKind.Nil;
+        if (!a.Vars.Contains(_name))
+            a.AddError(new SparvException("Variable is not delcared", _token.Line, _token.Start, _token.End));
     }
 
     public object? Interpret(Interpreter inter)

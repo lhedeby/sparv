@@ -1,13 +1,12 @@
-public class For(string i, IAstNode expr, List<IAstNode> stmts, Token token) : IAstNode
+public class For(string i, IAstNode expr, List<IAstNode> stmts, Token token, Token start, Token end) : IAstNode
 {
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
         a.BeginScope();
-        a.AddVar(i, AnalyzerKind.Nil);
+        a.AddVar(i);
         foreach (var stmt in stmts)
             stmt.Analyze(a);
         a.EndScope();
-        return AnalyzerKind.Nil;
     }
 
     public object? Interpret(Interpreter inter)

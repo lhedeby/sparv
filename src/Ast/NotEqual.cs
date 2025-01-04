@@ -1,4 +1,3 @@
-
 public class NotEqual : IAstNode
 {
     IAstNode _lhs;
@@ -9,9 +8,8 @@ public class NotEqual : IAstNode
         _rhs = rhs;
     }
 
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        return AnalyzerKind.Bool;
     }
 
     public object? Interpret(Interpreter inter)

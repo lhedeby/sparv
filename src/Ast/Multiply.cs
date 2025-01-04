@@ -1,8 +1,7 @@
 public class Multiply(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
 {
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        return AnalyzerKind.Number;
     }
 
     public object? Interpret(Interpreter inter)

@@ -1,6 +1,6 @@
 public class True : IAstNode
 {
-    public AnalyzerKind Analyze(Analyzer a) => AnalyzerKind.Bool;
+    public void Analyze(Analyzer a) {}
 
     public object? Interpret(Interpreter inter)
     {
@@ -15,7 +15,7 @@ public class True : IAstNode
 
 public class False : IAstNode
 {
-    public AnalyzerKind Analyze(Analyzer a) => AnalyzerKind.Bool;
+    public void Analyze(Analyzer a) {}
 
     public object? Interpret(Interpreter inter)
     {

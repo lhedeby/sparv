@@ -1,5 +1,8 @@
-
-public record class CompletionParams(CompletionContext Context) : IClientRequest
+public record class CompletionParams(
+    CompletionContext Context,
+    TextDocumentIdentifier TextDocumentIdentifier,
+    Position Position
+) : IClientRequest
 {
     public object? Handle(State state, StreamWriter writer)
     {
@@ -10,24 +13,35 @@ public record class CompletionParams(CompletionContext Context) : IClientRequest
             list.Add(
                 new CompletionItem()
                 {
-                    Label = suggestion.Item1,
+                    Label = suggestion,
                     Kind = CompletionItemKind.Variable,
-                    LabelDetails = new(suggestion.Item2.ToString(), null),
-                    Detail = $"Variable of type {suggestion.Item2}",
+                    LabelDetails = new(suggestion, null),
+                    Detail = $"Variable: '{suggestion}'",
                     Documentation = null,
-                    InsertText = suggestion.Item1,
+                    InsertText = suggestion,
                     InsertTextFormat = InsertTextFormat.PlainText
                 }
 
             );
         }
-        list.Add(Documentation.Print().ToCompletionItem());
-        list.Add(Documentation.Split().ToCompletionItem());
-        list.Add(Documentation.ReadFile().ToCompletionItem());
-        list.Add(Documentation.Len().ToCompletionItem());
-        list.Add(Documentation.Parse().ToCompletionItem());
-        list.Add(Documentation.Typeof().ToCompletionItem());
-        list.Add(Documentation.ReadInput().ToCompletionItem());
+        foreach (var (key, value) in state.Functions)
+        {
+            list.Add(
+                new CompletionItem()
+                {
+                    Label = key,
+                    Kind = CompletionItemKind.Function,
+                    LabelDetails = new($"{key}({string.Join(", ",value)})", null),
+                    Detail = $"{key}({string.Join(", ",value)})",
+                    Documentation = null,
+                    InsertText = $"{key}(",
+                    InsertTextFormat = InsertTextFormat.PlainText
+                }
+
+            );
+        }
+
+        list.AddRange(Documentation.CompletionItems);
         return list;
     }
 }

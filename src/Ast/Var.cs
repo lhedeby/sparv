@@ -1,20 +1,25 @@
-public class Var(string identifier, IAstNode expr) : IAstNode
+public class Var(Token token, IAstNode expr) : IAstNode
 {
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        a.AddVar(identifier, expr.Analyze(a));
-        return AnalyzerKind.Nil;
+        if (expr is Fun fun)
+            a.Functions.Add(token.Value, fun.Parameters);
+        if (a.VarExistsInCurrentScope(token.Value))
+            a.AddError(new SparvException($"Variable with name '{token.Value}' already exists in the current scope", token));
+        else
+            a.AddVar(token.Value);
+        expr.Analyze(a);
     }
 
     public object? Interpret(Interpreter inter)
     {
-        inter.AddVar(identifier, expr.Interpret(inter));
+        inter.AddVar(token.Value, expr.Interpret(inter));
         return null;
     }
 
     public override string ToString()
     {
-        return $"(var({identifier}, {expr}))";
+        return $"(var({token.Value}, {expr}))";
     }
 }
 

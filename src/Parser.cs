@@ -68,9 +68,9 @@ public class Parser
     private IAstNode FunctionDecl()
     {
         Consume(TokenKind.Fun);
-        var name = Advance().Value;
+        var token = Advance();
         var func = Function();
-        return new Var(name, func);
+        return new Var(token, func);
     }
 
     private IAstNode Function()
@@ -163,7 +163,7 @@ public class Parser
         var identifier = Advance();
         Consume(TokenKind.Equal);
         var expr = Expr();
-        return new Var(identifier.Value, expr);
+        return new Var(identifier, expr);
 
     }
     private IAstNode Identifier(Token token)
@@ -206,13 +206,16 @@ public class Parser
         Consume(TokenKind.In);
         var expr = ParseExpr(0);
 
+        var startToken = CurrentToken();
         Consume(TokenKind.LeftBrace);
         var stmts = new List<IAstNode>();
         while (CurrentTokenKind() != TokenKind.RightBrace)
             stmts.Add(ParseStmt());
+
+        var endToken = CurrentToken();
         Consume(TokenKind.RightBrace);
 
-        return new For(identifier.Value, expr, stmts, forToken);
+        return new For(identifier.Value, expr, stmts, forToken, startToken, endToken);
     }
 
     /*

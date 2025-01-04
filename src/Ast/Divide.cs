@@ -8,7 +8,7 @@ public class Divide : IAstNode
         _rhs = rhs;
     }
 
-    public AnalyzerKind Analyze(Analyzer a) => AnalyzerKind.Number;
+    public void Analyze(Analyzer a) {}
 
     public object? Interpret(Interpreter inter)
     {

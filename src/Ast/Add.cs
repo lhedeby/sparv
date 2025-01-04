@@ -8,14 +8,8 @@ public class Add : IAstNode
         _rhs = rhs;
     }
 
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        return (_lhs.Analyze(a), _rhs.Analyze(a)) switch
-        {
-            (AnalyzerKind.Number, AnalyzerKind.Number) => AnalyzerKind.Number,
-            (AnalyzerKind.List, AnalyzerKind.List) => AnalyzerKind.List,
-            _ => AnalyzerKind.String
-        };
     }
 
     public object? Interpret(Interpreter inter)

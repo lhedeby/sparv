@@ -31,9 +31,8 @@ public class Abs : IAstNode {
         _parameter = parameters.First();
     }
 
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        return AnalyzerKind.String;
     }
 
     public object? Interpret(Interpreter inter)
@@ -56,9 +55,8 @@ public class ReadInput : IAstNode
             throw new SparvException("read_input() takes no arguments", token);
     }
 
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        return AnalyzerKind.String;
     }
 
     public object? Interpret(Interpreter inter)
@@ -77,7 +75,7 @@ public class Parse : IAstNode
         _parameter = parameters.First();
     }
 
-    public AnalyzerKind Analyze(Analyzer a) => AnalyzerKind.Number;
+    public void Analyze(Analyzer a) {}
 
     public object? Interpret(Interpreter inter)
     {
@@ -100,7 +98,7 @@ public class Split : IAstNode
         _parameters = parameters;
     }
 
-    public AnalyzerKind Analyze(Analyzer a) => AnalyzerKind.List;
+    public void Analyze(Analyzer a) {}
 
     public object? Interpret(Interpreter inter)
     {
@@ -128,7 +126,7 @@ public class ReadFile : IAstNode
         _parameter = parameters.First();
     }
 
-    public AnalyzerKind Analyze(Analyzer a) => AnalyzerKind.String;
+    public void Analyze(Analyzer a) {}
 
     public object? Interpret(Interpreter inter)
     {
@@ -151,7 +149,7 @@ public class Print : IAstNode
         _parameter = parameters.First();
     }
 
-    public AnalyzerKind Analyze(Analyzer a) => AnalyzerKind.String;
+    public void Analyze(Analyzer a) {}
 
     public object? Interpret(Interpreter inter)
     {
@@ -171,7 +169,7 @@ public class Len : IAstNode
         _parameter = parameters.First();
     }
 
-    public AnalyzerKind Analyze(Analyzer a) => AnalyzerKind.Number;
+    public void Analyze(Analyzer a) {}
 
     public object? Interpret(Interpreter inter) => _parameter.Interpret(inter) switch
     {
@@ -198,7 +196,7 @@ public class Typeof : IAstNode
         _parameter = parameters.First();
     }
 
-    public AnalyzerKind Analyze(Analyzer a) => AnalyzerKind.String;
+    public void Analyze(Analyzer a) {}
 
     public object? Interpret(Interpreter inter) => _parameter.Interpret(inter) switch
     {

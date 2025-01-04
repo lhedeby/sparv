@@ -25,13 +25,9 @@ public class Index(IAstNode list, IAstNode index, Token token) : IAstNode
         return $"(Index ({list}, {index}))";
     }
 
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        var kind = list.Analyze(a);
-        // TODO
-        // if (kind is not AnalyzerKind.List or AnalyzerKind.String)
-        //     a.AddError(new SparvException("Trying to index something that is not a list or string at", token));
-        return kind;
+        list.Analyze(a);
     }
 }
 

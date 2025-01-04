@@ -1,6 +1,7 @@
 public class Analyzer
 {
-    private List<Dictionary<string, AnalyzerKind>> _variables;
+    private Dictionary<string, List<string>> _functions;
+    private List<List<string>> _variables;
     private List<SparvException> _errors;
     private IAstNode _root;
     public Analyzer(IAstNode root)
@@ -9,6 +10,7 @@ public class Analyzer
         _variables = new();
         _variables.Add(new());
         _errors = new();
+        _functions = new();
     }
 
     public void Run()
@@ -16,41 +18,35 @@ public class Analyzer
         _root.Analyze(this);
     }
 
+    // TODO
     public List<SparvException> Errors { get => _errors; }
-    
+    public Dictionary<string, List<string>> Functions => _functions;
+
     public bool HasErrors { get => _errors.Count > 0; }
     public void AddError(SparvException e) => _errors.Add(e);
-    public void AddVar(string s, AnalyzerKind kind) => _variables.Last().Add(s, kind);
+    public void AddVar(string identifier) 
+    {
+        _variables.Last().Add(identifier);
+    }
+    public bool VarExistsInCurrentScope(string identifier) => _variables.Last().Contains(identifier);
 
     // TODO: How to handle scopes?
     public void BeginScope() => _variables.Add(new());
     public void EndScope() => _variables.RemoveAt(_variables.Count - 1);
 
-    public bool VarExists(string key) => Get(key) is not null;
-    public List<(string, AnalyzerKind)> Vars =>
+    public bool VarExists(string key) => Get(key);
+    public List<string> Vars =>
         _variables
-            .SelectMany(dict => 
-                (dict.Select(kvp => (kvp.Key, kvp.Value))))
+            .SelectMany(l => l.Select(x => x))
             .ToList();
 
-    private AnalyzerKind? Get(string key)
+    private bool Get(string s)
     {
         for (int i = _variables.Count - 1; i >= 0; i--)
         {
-            if (_variables[i].ContainsKey(key))
-                return _variables[i][key];
+            if (_variables[i].Contains(s))
+                return true;
         }
-        return null;
+        return false;
     }
-}
-
-public enum AnalyzerKind
-{
-    Number,
-    String,
-    Bool,
-    List,
-    Object,
-    Nil,
-    Function
 }

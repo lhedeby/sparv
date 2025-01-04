@@ -1,7 +1,7 @@
 public interface IAstNode
 {
     object? Interpret(Interpreter inter);
-    AnalyzerKind Analyze(Analyzer a);
+    void Analyze(Analyzer a);
 }
 
 public static class Extensions

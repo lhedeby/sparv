@@ -1,8 +1,7 @@
 public class Obj(Dictionary<string, IAstNode> dict) : IAstNode
 {
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        return AnalyzerKind.Object;
     }
 
     public object? Interpret(Interpreter inter)

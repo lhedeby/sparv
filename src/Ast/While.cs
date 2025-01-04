@@ -1,13 +1,9 @@
-
 public class While(IAstNode expr, List<IAstNode> stmts) : IAstNode
 {
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        // if (expr.Analyze(a) != AnalyzerKind.Bool)
-        //     a.AddError(new SparvException("While expression must be bool", 0, 0, 0));
         foreach (var stmt in stmts)
             stmt.Analyze(a);
-        return AnalyzerKind.Nil;
     }
 
     public object? Interpret(Interpreter inter)

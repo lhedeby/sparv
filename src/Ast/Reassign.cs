@@ -1,22 +1,12 @@
 public class Reassign(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
 {
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
         if (lhs is Variable s)
         {
             if (!a.VarExists(s.Name))
-            {
                 a.AddError(new SparvException($"No variable named '{s.Name}' exists in this scope", s.Token.Line, s.Token.Start, s.Token.End));
-            }
-
-            // typechecking?
-            // if (lhs.Analyze(a) != rhs.Analyze(a))
-            // {
-            //     a.AddError(new SparvException($"Trying to change type of var {s.Name}", s.Token.Line, s.Token.Start, s.Token.End));
-            // }
         }
-
-        return AnalyzerKind.Nil;
     }
 
     public object? Interpret(Interpreter inter)

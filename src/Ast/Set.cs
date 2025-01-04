@@ -1,8 +1,7 @@
 public record class Set(IAstNode lhs, IAstNode identifier, IAstNode rhs) : IAstNode
 {
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        return AnalyzerKind.Nil;
     }
 
     public object? Interpret(Interpreter inter)

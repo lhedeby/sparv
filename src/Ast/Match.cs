@@ -1,8 +1,7 @@
 public record class Match(IAstNode expr, List<(IAstNode lhs, IAstNode rhs)> arms) : IAstNode
 {
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        return AnalyzerKind.Nil;
     }
 
     public object? Interpret(Interpreter inter)

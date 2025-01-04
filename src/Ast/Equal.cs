@@ -1,8 +1,7 @@
 public class Equal(IAstNode lhs, IAstNode rhs) : IAstNode
 {
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        return AnalyzerKind.Nil;
     }
 
     public object? Interpret(Interpreter inter)

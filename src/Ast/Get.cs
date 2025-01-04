@@ -1,8 +1,8 @@
 public record class Get(IAstNode lhs, IAstNode identifier, Token token) : IAstNode
 {
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        return lhs.Analyze(a);
+        lhs.Analyze(a);
     }
 
     public object? Interpret(Interpreter inter)

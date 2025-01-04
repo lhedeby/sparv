@@ -10,7 +10,7 @@ public class StringNode : IAstNode
         _value = s;
     }
 
-    public AnalyzerKind Analyze(Analyzer a) => AnalyzerKind.String;
+    public void Analyze(Analyzer a) {}
 
     public object? Interpret(Interpreter inter)
     {

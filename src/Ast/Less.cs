@@ -8,7 +8,7 @@ public class Less : IAstNode
         _rhs = rhs;
     }
 
-    public AnalyzerKind Analyze(Analyzer a) => AnalyzerKind.Bool;
+    public void Analyze(Analyzer a) {}
 
     public object? Interpret(Interpreter inter)
     {

@@ -1,9 +1,9 @@
 
 public class Return(IAstNode expr) : IAstNode
 {
-    public AnalyzerKind Analyze(Analyzer a)
+    public void Analyze(Analyzer a)
     {
-        return expr.Analyze(a);
+        expr.Analyze(a);
     }
 
     public object? Interpret(Interpreter inter)

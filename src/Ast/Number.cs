@@ -2,7 +2,7 @@ public class Number(Token token) : IAstNode
 {
     private double _value = double.Parse(token.Value);
 
-    public AnalyzerKind Analyze(Analyzer a) => AnalyzerKind.Number;
+    public void Analyze(Analyzer a) {}
 
     public object? Interpret(Interpreter inter)
     {
