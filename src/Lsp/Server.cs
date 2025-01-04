@@ -23,6 +23,7 @@ public class LspServer
     private StreamWriter _logger;
     private State _state;
     private Lifecyle _lifecycle;
+    private CancellationTokenSource _cts;
 
     private void Log(string? msg)
     {
@@ -34,7 +35,9 @@ public class LspServer
         _logger = new StreamWriter("./log");
         _state = new();
         _lifecycle = Lifecyle.Running;
+        _cts = new();
         Log("server created");
+        var test = DateTime.Now;
     }
 
     public async Task Start()
@@ -46,23 +49,21 @@ public class LspServer
         using var reader = new StreamReader(stdin);
         using var writer = new StreamWriter(stdout);
 
-        await Task.WhenAll(Listen(reader, writer), Diagnostics(writer));
+        await Task.WhenAll(Listen(reader, writer));
         Log("Exited gracefully.");
     }
 
-    private async Task Diagnostics(StreamWriter writer)
+    private async void Diagnostics(StreamWriter writer)
     {
-        while (_lifecycle == Lifecyle.Running)
+        if (_lifecycle == Lifecyle.Running)
         {
             try
             {
-                await Task.Delay(2000);
-                if (!_state.HasChanged)
-                {
-                    Log($"NO CHANGES, no diag");
-                    continue;
-                }
-                Log($"Found changes running diagnostics");
+                _cts.Cancel();
+                _cts = new CancellationTokenSource();
+                await Task.Delay(500, _cts.Token);
+                if (_cts.IsCancellationRequested)
+                    return;
                 _state.HasChanged = false;
                 var pdp = new List<PublishDiagnosticsParams>();
                 lock (_state)
@@ -93,6 +94,7 @@ public class LspServer
                     await Send(writer, "textDocument/publishDiagnostics", d);
                 }
             }
+            catch (TaskCanceledException) {}
             catch (Exception e)
             {
                 Log($"Diagnostics exception: {e.Message}");
@@ -100,7 +102,6 @@ public class LspServer
             }
 
         }
-        Log("Diag thread died");
     }
 
     private async Task Listen(StreamReader reader, StreamWriter writer)
@@ -149,6 +150,11 @@ public class LspServer
 
                 Log($"ERROR: Could not decode message: {e.Message}");
                 Log($"{e.StackTrace}");
+            }
+            if (_state.HasChanged)
+            {
+                Diagnostics(writer);
+                _state.HasChanged = false;
             }
         }
         Log("main thread died");
