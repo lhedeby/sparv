@@ -32,7 +32,7 @@ public record class CompletionParams(
                     Label = key,
                     Kind = CompletionItemKind.Function,
                     LabelDetails = new($"{key}({string.Join(", ",value)})", null),
-                    Detail = $"{key}({string.Join(", ",value)})",
+                    Detail = $"fun {key}({string.Join(", ",value)})",
                     Documentation = null,
                     InsertText = $"{key}(",
                     InsertTextFormat = InsertTextFormat.PlainText

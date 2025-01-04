@@ -6,9 +6,9 @@ public record class HoverParams(TextDocumentIdentifier TextDocument, Position Po
         {
             if (Position.Line == token.Line && Position.Character >= token.Start && Position.Character < token.End)
             {
-                    return new Hover(
-                        Text(state, token.Value),
-                        new(new(token.Line, token.Start), new(token.Line, token.End)));
+                return new Hover(
+                    Text(state, token.Value),
+                    new(new(token.Line, token.Start), new(token.Line, token.End)));
             }
         }
         return null;
@@ -20,7 +20,7 @@ public record class HoverParams(TextDocumentIdentifier TextDocument, Position Po
         if (Documentation.IsNative(identifier))
             return Documentation.CompletionItem(identifier).Documentation!;
         if (state.Functions.ContainsKey(identifier))
-            return new MarkupContent("plaintext", $"{identifier}({string.Join(", ",state.Functions[identifier])})");
+            return new MarkupContent("plaintext", $"fun {identifier}({string.Join(", ", state.Functions[identifier])})");
 
         return new MarkupContent("plaintext", $"Variable: '{identifier}'");
     }
