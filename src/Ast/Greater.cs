@@ -1,29 +1,21 @@
-public class Greater : IAstNode
+public class Greater(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
 {
-    IAstNode _lhs;
-    IAstNode _rhs;
-    public Greater(IAstNode lhs, IAstNode rhs)
-    {
-        _lhs = lhs;
-        _rhs = rhs;
-    }
-
     public void Analyze(Analyzer a)
     {
     }
 
     public object? Interpret(Interpreter inter)
     {
-        var lhs = _lhs.Interpret(inter);
-        var rhs = _rhs.Interpret(inter);
-        if (lhs is not double) throw new Exception("TODO: lhs not number");
-        if (rhs is not double) throw new Exception("TODO: rhs not number");
-        return (double)lhs > (double)rhs;
+        if (lhs.Interpret(inter) is not double l)
+            throw new SparvException("Left hand side is not a number", token);
+        if (rhs.Interpret(inter) is not double r) 
+            throw new SparvException("Left hand side is not a number", token);
+        return l > r;
     }
 
     public override string ToString()
     {
-        return $"({_lhs} > {_rhs})";
+        return $"({lhs} > {rhs})";
     }
 }
 

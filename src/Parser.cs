@@ -10,9 +10,8 @@ public class Parser
     public Analyzer? Analyzer { get; set; }
     public Parser(string source)
     {
-        var scanner = new Scanner(source);
         _source = source;
-        _tokens = scanner.Tokens().ToList();
+        _tokens = new();
         _p = 0;
         Errors = new();
     }
@@ -20,10 +19,12 @@ public class Parser
 
     public IAstNode Parse()
     {
-        _tokens = _tokens.Where(x => x.Kind != TokenKind.Comment).ToList();
         var decls = new List<IAstNode>();
         try
         {
+            var scanner = new Scanner(_source);
+            _tokens = scanner.Tokens().ToList();
+            _tokens = _tokens.Where(x => x.Kind != TokenKind.Comment).ToList();
             while (CurrentTokenKind() != TokenKind.EndOfFile)
             {
                 var decl = ParseDecl();
@@ -250,19 +251,19 @@ public class Parser
         var rhs = ParseExpr(InfixPrecedence(token.Kind));
         return token.Kind switch
         {
-            TokenKind.Or => new Or(lhs, rhs),
-            TokenKind.And => new And(lhs, rhs),
+            TokenKind.Or => new Or(lhs, rhs, token),
+            TokenKind.And => new And(lhs, rhs, token),
             TokenKind.BangEqual => new NotEqual(lhs, rhs),
             TokenKind.EqualEqual => new Equal(lhs, rhs),
-            TokenKind.Greater => new Greater(lhs, rhs),
+            TokenKind.Greater => new Greater(lhs, rhs, token),
             TokenKind.GreaterEqual => new GreaterEqual(lhs, rhs, token),
-            TokenKind.Less => new Less(lhs, rhs),
-            TokenKind.LessEqual => new LessEqual(lhs, rhs),
+            TokenKind.Less => new Less(lhs, rhs, token),
+            TokenKind.LessEqual => new LessEqual(lhs, rhs, token),
             TokenKind.Star => new Multiply(lhs, rhs, token),
-            TokenKind.Slash => new Divide(lhs, rhs),
-            TokenKind.Percent => new Modulo(lhs, rhs),
+            TokenKind.Slash => new Divide(lhs, rhs, token),
+            TokenKind.Percent => new Modulo(lhs, rhs, token),
             TokenKind.Plus => new Add(lhs, rhs),
-            TokenKind.Minus => new Subtract(lhs, rhs),
+            TokenKind.Minus => new Subtract(lhs, rhs, token),
             TokenKind.Equal => new Reassign(lhs, rhs, token),
             TokenKind.PlusEqual => new ReassignPlus(lhs, rhs, token),
             TokenKind.MinusEqual => new ReassignMinus(lhs, rhs, token),
@@ -270,7 +271,7 @@ public class Parser
             // TokenKind.Dot => GetOrSet(lhs, rhs),
             // TODO: Should we just parse arrows as double call?
             TokenKind.Arrow => ArrowCall(lhs, rhs, token),
-            _ => throw new Exception("todo")
+            _ => throw new SparvException($"Unexpected token '{token.Value}'", token)
         };
     }
 
@@ -294,7 +295,7 @@ public class Parser
         if (CurrentTokenKind() == TokenKind.Equal)
         {
             Consume(TokenKind.Equal);
-            return new Set(lhs, expr, ParseExpr(0));
+            return new Set(lhs, expr, ParseExpr(0), token);
         }
         else
             return new Get(lhs, expr, token);
@@ -353,8 +354,8 @@ public class Parser
     {
         return token.Kind switch
         {
-            TokenKind.Minus => new PrefixMinus(ParseExpr(PrefixPrecedence())),
-            TokenKind.Bang => new PrefixBang(ParseExpr(PrefixPrecedence())),
+            TokenKind.Minus => new PrefixMinus(ParseExpr(PrefixPrecedence()), token),
+            TokenKind.Bang => new PrefixBang(ParseExpr(PrefixPrecedence()), token),
             TokenKind.LeftBracket => List(),
             TokenKind.Identifier => Identifier(token),
             TokenKind.Number => Number(token),

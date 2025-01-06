@@ -23,7 +23,7 @@ public class ReassignMinus(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
             if (g.lhs.Interpret(inter) is not RuntimeObject o)
                 throw new SparvException("Left side of this must be an object", token);
             if (g.identifier.Interpret(inter) is not string s)
-                throw new Exception("TODO: expected string as identifier");
+                throw new SparvException("Field does not exist on the object", token);
 
             var lhsValue = lhs.Interpret(inter);
             var rhsValue = rhs.Interpret(inter);
@@ -34,7 +34,7 @@ public class ReassignMinus(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
                 _ => throw new SparvException($"lhs: '{lhsValue}', rhs: '{rhsValue}'", token),
             };
         }
-        throw new Exception("TODO: lhs not a variable");
+        throw new SparvException("TODO: Cant reassign", token);
     }
 }
 

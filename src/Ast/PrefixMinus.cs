@@ -1,21 +1,14 @@
-
-public class PrefixMinus : IAstNode
+public class PrefixMinus(IAstNode node, Token token) : IAstNode
 {
-    private IAstNode _node;
-    public PrefixMinus(IAstNode node)
-    {
-        _node = node;
-    }
-
     public void Analyze(Analyzer a)
     {
     }
 
     public object? Interpret(Interpreter inter)
     {
-        var node = _node.Interpret(inter);
-        if (node is not double) throw new Exception("TODO: Not a number");
-        return -((double)node);
+        if (node.Interpret(inter) is not double d)
+            throw new SparvException("'-' must be followed by a number", token);
+        return -d;
     }
 }
 

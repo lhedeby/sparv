@@ -90,7 +90,7 @@ class Scanner
             '<' => MakeToken(TwoCharTokens(c, TokenKind.Less)),
             '>' => MakeToken(TwoCharTokens(c, TokenKind.Greater)),
             '"' => String(),
-            _ => throw new Exception("No char found"),
+            _ => throw new SparvException($"Unexpected char '{c}'", _line, _startCol, _current),
         };
     }
 
@@ -167,7 +167,7 @@ class Scanner
     private Token String()
     {
         while (!IsAtEnd() && Advance() != '"') ;
-        if (IsAtEnd()) throw new Exception("Unterminated string");
+        if (IsAtEnd()) throw new SparvException("Unterminated string", _line, _startCol, _col);
         return MakeToken(TokenKind.String);
     }
 

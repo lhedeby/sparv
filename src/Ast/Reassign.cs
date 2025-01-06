@@ -26,14 +26,14 @@ public class Reassign(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
             {
                 int i => i,
                 double d => (int)d,
-                _ => throw new Exception("Not a valid indexer")
+                _ => throw new SparvException("Index must be a number", token)
             };
 
             var res = rhs.Interpret(inter);
             l.list[indexer] = res;
             return null;
         }
-        throw new Exception("TODO: Cant set lhs");
+        throw new SparvException("TODO: Cant reassign", token);
     }
 }
 

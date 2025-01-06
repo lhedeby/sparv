@@ -6,7 +6,7 @@ public class Index(IAstNode list, IAstNode index, Token token) : IAstNode
         {
             int n => n,
             double n => (int)n,
-            _ => throw new Exception($"TODO: Not a number: {index}")
+            _ => throw new SparvException($"List access must be a number", token)
         };
 
         return list.Interpret(inter) switch
@@ -28,6 +28,7 @@ public class Index(IAstNode list, IAstNode index, Token token) : IAstNode
     public void Analyze(Analyzer a)
     {
         list.Analyze(a);
+        index.Analyze(a);
     }
 }
 

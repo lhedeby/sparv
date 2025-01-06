@@ -5,28 +5,35 @@ public record class SemanticTokensParams(TextDocumentIdentifier TextDocument) : 
         var doc = state.Documents[TextDocument.Uri];
         var scanner = new Scanner(doc.Text);
 
-        var tokens = scanner.Tokens().ToList();
-        var res = new int[tokens.Count * 5];
-        var previousLine = 0;
-        var previousStart = 0;
-        var i = 0;
-        var j = 1;
-
-        foreach (var token in tokens)
+        try
         {
-            var type = TokenType(token.Kind, j < tokens.Count ? tokens[j].Kind : null);
-            res[i++] = token.Line - previousLine;
-            res[i++] = token.Start - (token.Line == previousLine ? previousStart : 0);
-            res[i++] = token.End - token.Start;
-            res[i++] = type;
-            res[i++] = 0;
+            var tokens = scanner.Tokens().ToList();
 
-            previousLine = token.Line;
-            previousStart = token.Start;
-            j++;
+            var res = new int[tokens.Count * 5];
+            var previousLine = 0;
+            var previousStart = 0;
+            var i = 0;
+            var j = 1;
+
+            foreach (var token in tokens)
+            {
+                var type = TokenType(token.Kind, j < tokens.Count ? tokens[j].Kind : null);
+                res[i++] = token.Line - previousLine;
+                res[i++] = token.Start - (token.Line == previousLine ? previousStart : 0);
+                res[i++] = token.End - token.Start;
+                res[i++] = type;
+                res[i++] = 0;
+
+                previousLine = token.Line;
+                previousStart = token.Start;
+                j++;
+            }
+
+            return new SemanticTokens(res);
         }
-
-        return new SemanticTokens(res);
+        catch (SparvException _se) { }
+        catch (Exception _e) { }
+        return null;
     }
 
 

@@ -1,5 +1,4 @@
-
-public class Or(IAstNode lhs, IAstNode rhs) : IAstNode
+public class Or(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
 {
     public void Analyze(Analyzer a)
     {
@@ -7,13 +6,13 @@ public class Or(IAstNode lhs, IAstNode rhs) : IAstNode
 
     public object? Interpret(Interpreter inter)
     {
-        if (lhs.Interpret(inter) is not bool lVal)
-            throw new Exception("TODO: lhs not bool");
-        if (lVal) return true;
+        if (lhs.Interpret(inter) is not bool l)
+            throw new SparvException("Left hand side of expression is not bool", token);
+        if (l) return true;
 
-        if (rhs.Interpret(inter) is not bool rVal)
-            throw new Exception("TODO: lhs not bool");
-        return rVal;
+        if (rhs.Interpret(inter) is not bool r)
+            throw new SparvException("Right hand side of expression is not bool", token);
+        return r;
     }
 
     public override string ToString()

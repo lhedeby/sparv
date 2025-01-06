@@ -23,12 +23,14 @@ public class NativeFunctions
 public class Abs : IAstNode {
 
     IAstNode _parameter;
+    Token _token;
     public Abs(List<IAstNode> parameters, Token token)
     {
         if (parameters.Count != 1)
             throw new SparvException("abs() takes 1 argument", token);
 
         _parameter = parameters.First();
+        _token = token;
     }
 
     public void Analyze(Analyzer a)
@@ -41,7 +43,7 @@ public class Abs : IAstNode {
         {
             double s => double.Abs(s),
             int s => int.Abs(s),
-            _ => throw new Exception("Abs must be number")
+            _ => throw new SparvException("Argument must be a number", _token)
         };
     }
 }
@@ -68,11 +70,13 @@ public class ReadInput : IAstNode
 public class Parse : IAstNode
 {
     IAstNode _parameter;
+    Token _token;
     public Parse(List<IAstNode> parameters, Token token)
     {
         if (parameters.Count != 1)
             throw new SparvException("parse() only take 1 parameter", token.Line, token.Start, token.End);
         _parameter = parameters.First();
+        _token = token;
     }
 
     public void Analyze(Analyzer a) {}
@@ -82,7 +86,7 @@ public class Parse : IAstNode
         return _parameter.Interpret(inter) switch
         {
             string s => double.Parse(s),
-            _ => throw new Exception("trying to parse something thats not a string")
+            _ => throw new SparvException("Argument must be a number", _token)
         };
     }
 
@@ -118,21 +122,22 @@ public class Split : IAstNode
 public class ReadFile : IAstNode
 {
     IAstNode _parameter;
+    Token _token;
 
     public ReadFile(List<IAstNode> parameters, Token token)
     {
         if (parameters.Count != 1)
             throw new SparvException("read_file() only take 1 parameter", token.Line, token.Start, token.End);
         _parameter = parameters.First();
+        _token = token;
     }
 
     public void Analyze(Analyzer a) {}
 
     public object? Interpret(Interpreter inter)
     {
-        var path = _parameter.Interpret(inter) as string;
-        if (path is null)
-            throw new Exception("invalid path");
+        if (_parameter.Interpret(inter) is not string path)
+            throw new SparvException("Argument must be a string", _token);
         using var sr = new StreamReader(path);
         return sr.ReadToEnd();
     }
@@ -162,11 +167,14 @@ public class Print : IAstNode
 public class Len : IAstNode
 {
     IAstNode _parameter;
+    Token _token;
+
     public Len(List<IAstNode> parameters, Token token)
     {
         if (parameters.Count != 1)
             throw new SparvException("len() only take 1 parameter", token.Line, token.Start, token.End);
         _parameter = parameters.First();
+        _token = token;
     }
 
     public void Analyze(Analyzer a) {}
@@ -176,7 +184,7 @@ public class Len : IAstNode
         RuntimeList l => (double)l.list.Count,
         string s => (double)s.Length,
         RuntimeObject o => (double)o.obj.Count,
-        _ => throw new Exception("TODO: cant len")
+        _ => throw new SparvException("Cant calculate length of argument", _token)
     };
 
     public override string? ToString()

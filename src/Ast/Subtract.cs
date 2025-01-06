@@ -1,30 +1,23 @@
-
-public class Subtract : IAstNode
+public class Subtract(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
 {
-    IAstNode _lhs;
-    IAstNode _rhs;
-    public Subtract(IAstNode lhs, IAstNode rhs)
-    {
-        _lhs = lhs;
-        _rhs = rhs;
-    }
-
     public void Analyze(Analyzer a)
     {
     }
 
     public object? Interpret(Interpreter inter)
     {
-        var lhs = _lhs.Interpret(inter);
-        var rhs = _rhs.Interpret(inter);
-        if (lhs is not double && lhs is not int) throw new Exception("TODO: lhs not number");
-        if (rhs is not double && rhs is not int) throw new Exception("TODO: rhs not number");
-        return (double)lhs - (double)rhs;
+        var e1 = lhs.Interpret(inter);
+        var e2 = rhs.Interpret(inter);
+        if (e1 is not double and not int)
+            throw new SparvException("Left hand side of subtract expression is not a number", token);
+        if (e2 is not double and not int)
+            throw new SparvException("Right hand side of subtract expression is not a number", token);
+        return (double)e1 - (double)e2;
     }
 
     public override string ToString()
     {
-        return $"({_lhs} - {_rhs})";
+        return $"({lhs} - {rhs})";
     }
 }
 
