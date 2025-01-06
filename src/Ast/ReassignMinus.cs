@@ -32,7 +32,7 @@ public class ReassignMinus(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
 
             return (lhsValue, rhsValue) switch
             {
-                (double l, double r) => o.obj[s] = l - r,
+                (double l, double r) => o.Obj[s] = l - r,
                 _ => throw new SparvException($"lhs: '{lhsValue}', rhs: '{rhsValue}'", token),
             };
         }

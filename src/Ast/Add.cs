@@ -14,7 +14,7 @@ public class Add(IAstNode lhs, IAstNode rhs) : IAstNode
         return (l, r) switch
         {
             (double d1, double d2) => d1 + d2,
-            (RuntimeList l1, RuntimeList l2) => new RuntimeList(l1.list.Concat(l2.list).ToList()),
+            (RuntimeList l1, RuntimeList l2) => new RuntimeList(l1.List.Concat(l2.List).ToList()),
             _ => l.ToString() + r.ToString()
         };
     }

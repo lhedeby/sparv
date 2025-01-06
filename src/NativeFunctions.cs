@@ -199,9 +199,9 @@ public class Len : IAstNode
 
     public object? Interpret(Interpreter inter) => _parameter.Interpret(inter) switch
     {
-        RuntimeList l => (double)l.list.Count,
+        RuntimeList l => (double)l.List.Count,
         string s => (double)s.Length,
-        RuntimeObject o => (double)o.obj.Count,
+        RuntimeObject o => (double)o.Obj.Count,
         _ => throw new SparvException("Cant calculate length of argument", _token)
     };
 

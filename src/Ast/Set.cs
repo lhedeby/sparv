@@ -14,7 +14,7 @@ public record class Set(IAstNode lhs, IAstNode identifier, IAstNode rhs, Token t
 
         if (identifier.Interpret(inter) is not string s)
             throw new SparvException("Field does not exist on the object", token);
-        o.obj[s] = rhs.Interpret(inter);
+        o.Obj[s] = rhs.Interpret(inter);
         return null;
     }
 }

@@ -32,7 +32,7 @@ public class Reassign(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
             };
 
             var res = rhs.Interpret(inter);
-            l.list[indexer] = res;
+            l.List[indexer] = res;
             return null;
         }
         throw new SparvException("TODO: Cant reassign", token);

@@ -15,7 +15,7 @@ public class For(string i, IAstNode expr, List<IAstNode> stmts, Token token, Tok
         var eval = expr.Interpret(inter);
         if (eval is RuntimeList list)
         {
-            foreach (var v in list.list)
+            foreach (var v in list.List)
             {
                 inter.BeginScope();
                 inter.AddVar(i, v);

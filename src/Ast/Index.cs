@@ -11,7 +11,7 @@ public class Index(IAstNode list, IAstNode index, Token token) : IAstNode
 
         return list.Interpret(inter) switch
         {
-            RuntimeList list => list.list[(int)i],
+            RuntimeList list => list.List[(int)i],
             string s => s[(int)i].ToString(),
             _ => throw new SparvException("Trying to index something that should not be indexed", token)
         };

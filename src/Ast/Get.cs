@@ -13,7 +13,7 @@ public record class Get(IAstNode lhs, IAstNode identifier, Token token) : IAstNo
         if (identifier.Interpret(inter) is not string s)
             throw new SparvException("Expected string as identifier", token);
         object? res = null;
-        o.obj.TryGetValue(s, out res);
+        o.Obj.TryGetValue(s, out res);
         return res;
     }
 }

@@ -1,4 +1,4 @@
-public record class RuntimeFunc(List<string> parameters, List<IAstNode> stmts, Dictionary<string, object?> scope)
+public record class RuntimeFunc(List<string> Parameters, List<IAstNode> Stmts, Dictionary<string, object?> Closure)
 {
     public override string? ToString()
     {
@@ -6,17 +6,17 @@ public record class RuntimeFunc(List<string> parameters, List<IAstNode> stmts, D
     }
 }
 
-public record class RuntimeList(List<object?> list)
+public record class RuntimeList(List<object?> List)
 {
     public override string ToString()
     {
-        return $"[{string.Join(", ", list)}]";
+        return $"[{string.Join(", ", List)}]";
     }
 }
-public record class RuntimeObject(Dictionary<string, object?> obj)
+public record class RuntimeObject(Dictionary<string, object?> Obj)
 {
     public override string ToString()
     {
-        return $$"""{ {{string.Join(", ", obj)}} }""";
+        return $$"""{ {{string.Join(", ", Obj)}} }""";
     }
 }

@@ -34,8 +34,8 @@ public class ReassignPlus(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
             var rhsValue = rhs.Interpret(inter);
             return (lhsValue, rhsValue) switch
             {
-                (string l, string r) => o.obj[s] = l + r,
-                (double l, double r) => o.obj[s] = l + r,
+                (string l, string r) => o.Obj[s] = l + r,
+                (double l, double r) => o.Obj[s] = l + r,
                 (RuntimeList l, RuntimeList r) => ConcatList(l, r),
                 _ => throw new SparvException($"lhs: {lhsValue ?? "nil"}, rhs: {rhsValue}", token),
             };
@@ -45,7 +45,7 @@ public class ReassignPlus(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
 
     private object? ConcatList(RuntimeList l1, RuntimeList l2)
     {
-        l1.list.AddRange(l2.list);
+        l1.List.AddRange(l2.List);
         return null;
     }
 }
