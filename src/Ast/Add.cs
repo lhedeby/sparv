@@ -8,11 +8,14 @@ public class Add(IAstNode lhs, IAstNode rhs) : IAstNode
 
     public object? Interpret(Interpreter inter)
     {
-        return (lhs.Interpret(inter) ?? "nil", rhs.Interpret(inter) ?? "nil") switch
+        var l = lhs.Interpret(inter) ?? "nil";
+        var r = rhs.Interpret(inter) ?? "nil";
+
+        return (l, r) switch
         {
             (double d1, double d2) => d1 + d2,
             (RuntimeList l1, RuntimeList l2) => new RuntimeList(l1.list.Concat(l2.list).ToList()),
-            _ => lhs.ToString() + rhs.ToString()
+            _ => l.ToString() + r.ToString()
         };
     }
 

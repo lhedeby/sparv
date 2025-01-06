@@ -1,0 +1,18 @@
+var o1 = {
+    i1: 42,
+    i2: 23,
+    no: {
+        ns: "nested string",
+    },
+};
+
+
+
+print(o1.i1); // expected: 42
+print(o1.no.ns); // expected: nested string
+
+o1.i1 -= o1.i2;
+o1.no = "a string";
+
+print(o1.i1); // expected: 19
+print(o1.no); // expected: a string
