@@ -2,6 +2,7 @@ public class While(IAstNode expr, List<IAstNode> stmts) : IAstNode
 {
     public void Analyze(Analyzer a)
     {
+        expr.Analyze(a);
         foreach (var stmt in stmts)
             stmt.Analyze(a);
     }

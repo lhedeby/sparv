@@ -20,7 +20,8 @@ public class NativeFunctions
     }
 }
 
-public class Abs : IAstNode {
+public class Abs : IAstNode
+{
 
     IAstNode _parameter;
     Token _token;
@@ -35,6 +36,7 @@ public class Abs : IAstNode {
 
     public void Analyze(Analyzer a)
     {
+        _parameter.Analyze(a);
     }
 
     public object? Interpret(Interpreter inter)
@@ -52,7 +54,7 @@ public class ReadInput : IAstNode
 {
     public ReadInput(List<IAstNode> parameters, Token token)
     {
-        
+
         if (parameters.Count > 0)
             throw new SparvException("read_input() takes no arguments", token);
     }
@@ -79,7 +81,10 @@ public class Parse : IAstNode
         _token = token;
     }
 
-    public void Analyze(Analyzer a) {}
+    public void Analyze(Analyzer a)
+    {
+        _parameter.Analyze(a);
+    }
 
     public object? Interpret(Interpreter inter)
     {
@@ -102,7 +107,11 @@ public class Split : IAstNode
         _parameters = parameters;
     }
 
-    public void Analyze(Analyzer a) {}
+    public void Analyze(Analyzer a)
+    {
+        foreach (var p in _parameters)
+            p.Analyze(a);
+    }
 
     public object? Interpret(Interpreter inter)
     {
@@ -132,7 +141,10 @@ public class ReadFile : IAstNode
         _token = token;
     }
 
-    public void Analyze(Analyzer a) {}
+    public void Analyze(Analyzer a)
+    {
+        _parameter.Analyze(a);
+    }
 
     public object? Interpret(Interpreter inter)
     {
@@ -154,7 +166,10 @@ public class Print : IAstNode
         _parameter = parameters.First();
     }
 
-    public void Analyze(Analyzer a) {}
+    public void Analyze(Analyzer a)
+    {
+        _parameter.Analyze(a);
+    }
 
     public object? Interpret(Interpreter inter)
     {
@@ -177,7 +192,10 @@ public class Len : IAstNode
         _token = token;
     }
 
-    public void Analyze(Analyzer a) {}
+    public void Analyze(Analyzer a)
+    {
+        _parameter.Analyze(a);
+    }
 
     public object? Interpret(Interpreter inter) => _parameter.Interpret(inter) switch
     {
@@ -204,7 +222,10 @@ public class Typeof : IAstNode
         _parameter = parameters.First();
     }
 
-    public void Analyze(Analyzer a) {}
+    public void Analyze(Analyzer a)
+    {
+        _parameter.Analyze(a);
+    }
 
     public object? Interpret(Interpreter inter) => _parameter.Interpret(inter) switch
     {

@@ -2,6 +2,8 @@ public class Obj(Dictionary<string, IAstNode> dict) : IAstNode
 {
     public void Analyze(Analyzer a)
     {
+        foreach (var val in dict.Values)
+            val.Analyze(a);
     }
 
     public object? Interpret(Interpreter inter)

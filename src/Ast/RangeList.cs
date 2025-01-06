@@ -1,8 +1,9 @@
-
 public class RangeList(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
 {
     public void Analyze(Analyzer a)
     {
+        lhs.Analyze(a);
+        rhs.Analyze(a);
     }
 
     public object? Interpret(Interpreter inter)

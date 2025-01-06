@@ -3,6 +3,7 @@ public record class Get(IAstNode lhs, IAstNode identifier, Token token) : IAstNo
     public void Analyze(Analyzer a)
     {
         lhs.Analyze(a);
+        identifier.Analyze(a);
     }
 
     public object? Interpret(Interpreter inter)

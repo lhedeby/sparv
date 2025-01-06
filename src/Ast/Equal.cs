@@ -2,6 +2,8 @@ public class Equal(IAstNode lhs, IAstNode rhs) : IAstNode
 {
     public void Analyze(Analyzer a)
     {
+        lhs.Analyze(a);
+        rhs.Analyze(a);
     }
 
     public object? Interpret(Interpreter inter)

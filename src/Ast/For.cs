@@ -2,6 +2,7 @@ public class For(string i, IAstNode expr, List<IAstNode> stmts, Token token, Tok
 {
     public void Analyze(Analyzer a)
     {
+        expr.Analyze(a);
         a.BeginScope();
         a.AddVar(i);
         foreach (var stmt in stmts)

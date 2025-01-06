@@ -2,6 +2,11 @@ public class Call(List<IAstNode> parameters, IAstNode expr, Token token) : IAstN
 {
     public void Analyze(Analyzer a)
     {
+        foreach (var p in parameters)
+        {
+            p.Analyze(a);
+        }
+        expr.Analyze(a);
     }
 
     public object? Interpret(Interpreter inter)

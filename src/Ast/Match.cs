@@ -2,6 +2,12 @@ public record class Match(IAstNode expr, List<(IAstNode lhs, IAstNode rhs)> arms
 {
     public void Analyze(Analyzer a)
     {
+        expr.Analyze(a);
+        foreach (var (l, r) in arms)
+        {
+            l.Analyze(a);
+            r.Analyze(a);
+        }
     }
 
     public object? Interpret(Interpreter inter)

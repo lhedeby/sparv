@@ -7,6 +7,8 @@ public class Reassign(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
             if (!a.VarExists(s.Name))
                 a.AddError(new SparvException($"No variable named '{s.Name}' exists in this scope", s.Token.Line, s.Token.Start, s.Token.End));
         }
+        lhs.Analyze(a);
+        rhs.Analyze(a);
     }
 
     public object? Interpret(Interpreter inter)

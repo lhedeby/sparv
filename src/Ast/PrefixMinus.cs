@@ -2,6 +2,7 @@ public class PrefixMinus(IAstNode node, Token token) : IAstNode
 {
     public void Analyze(Analyzer a)
     {
+        node.Analyze(a);
     }
 
     public object? Interpret(Interpreter inter)

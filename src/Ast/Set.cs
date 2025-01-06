@@ -2,6 +2,9 @@ public record class Set(IAstNode lhs, IAstNode identifier, IAstNode rhs, Token t
 {
     public void Analyze(Analyzer a)
     {
+        lhs.Analyze(a);
+        identifier.Analyze(a);
+        rhs.Analyze(a);
     }
 
     public object? Interpret(Interpreter inter)

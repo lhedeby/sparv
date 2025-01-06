@@ -1,27 +1,19 @@
-public class NotEqual : IAstNode
+public class NotEqual(IAstNode lhs, IAstNode rhs) : IAstNode
 {
-    IAstNode _lhs;
-    IAstNode _rhs;
-    public NotEqual(IAstNode lhs, IAstNode rhs)
-    {
-        _lhs = lhs;
-        _rhs = rhs;
-    }
-
     public void Analyze(Analyzer a)
     {
+        lhs.Analyze(a);
+        rhs.Analyze(a);
     }
 
     public object? Interpret(Interpreter inter)
     {
-        var lhs = _lhs.Interpret(inter);
-        var rhs = _rhs.Interpret(inter);
-        return !EqualityComparer<object>.Default.Equals(lhs, rhs);
+        return !EqualityComparer<object>.Default.Equals(lhs.Interpret(inter), rhs.Interpret(inter));
     }
 
     public override string ToString()
     {
-        return $"({_lhs} != {_rhs})";
+        return $"({lhs} != {rhs})";
     }
 }
 
