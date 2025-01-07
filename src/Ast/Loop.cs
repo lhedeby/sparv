@@ -13,10 +13,10 @@ public class Loop(IAstNode expr, List<IAstNode> stmts, Token token) : IAstNode
             throw new SparvException("Loop must be followed by a number", token);
         for (int i = 0; i < d; i++)
         {
-            foreach (var stmt in stmts)
-            {
-                stmt.Interpret(inter);
-            }
+            inter.BeginScope();
+            stmts.Run(inter);
+            inter.EndScope();
+            if (inter.HasReturned) return null;
         }
         return null;
     }
