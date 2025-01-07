@@ -1,13 +1,25 @@
 public class Var(Token token, IAstNode expr) : IAstNode
 {
-    public void Analyze(Analyzer a)
+    public void HoistIfFun(Analyzer a)
     {
         if (expr is Fun fun)
+        {
             a.Functions.Add(token.Value, fun.Parameters);
-        if (a.VarExistsInCurrentScope(token.Value))
-            a.AddError(new SparvException($"Variable with name '{token.Value}' already exists in the current scope", token));
-        else
             a.AddVar(token.Value);
+        }
+    }
+
+    public void Analyze(Analyzer a)
+    {
+        // if (expr is Fun fun)
+        //     a.Functions.Add(token.Value, fun.Parameters);
+        if (expr is not Fun)
+        {
+            if (a.VarExistsInCurrentScope(token.Value))
+                a.AddError(new SparvException($"Variable with name '{token.Value}' already exists in the current scope", token));
+            else
+                a.AddVar(token.Value);
+        }
         expr.Analyze(a);
     }
 

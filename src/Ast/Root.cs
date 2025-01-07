@@ -4,6 +4,13 @@ public class Root(List<IAstNode> nodes) : IAstNode
     {
         foreach (var node in nodes)
         {
+            if (node is Var v)
+            {
+                v.HoistIfFun(a);
+            }
+        }
+        foreach (var node in nodes)
+        {
             node.Analyze(a);
         }
     }
