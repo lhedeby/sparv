@@ -23,14 +23,11 @@ public class Call(List<IAstNode> parameters, IAstNode expr, Token token) : IAstN
         {
             inter.AddVar(key, value);
         }
-        inter.BeginScope();
         foreach (var (key, value) in f.Parameters.Zip(resolved_params))
         {
             inter.AddVar(key, value);
         }
         f.Stmts.Run(inter);
-        // TODO: Probably remove this double scope
-        inter.EndScope();
         inter.EndScope();
         if (inter.HasReturned)
         {

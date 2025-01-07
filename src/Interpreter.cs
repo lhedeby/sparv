@@ -56,7 +56,9 @@ public class Interpreter
 
     public Dictionary<string, object?> GetScope()
     {
-        return _variables.Last();
+        if (_variables.Count > 1)
+            return _variables.Last();
+        return new();
     }
 
     public void PrintVars()
