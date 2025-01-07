@@ -63,6 +63,7 @@ public class Parser
         // TODO: Should this be here?
         // TokenKind.Identifier => Identifier(),
         TokenKind.For => For(),
+        TokenKind.Loop => Loop(),
         _ => Expr()
     };
 
@@ -197,6 +198,21 @@ public class Parser
         return expr;
     }
 
+    private IAstNode Loop()
+    {
+        var loopToken = CurrentToken();
+        Consume(TokenKind.Loop);
+        var expr = ParseExpr(0);
+        Consume(TokenKind.LeftBrace);
+
+        var stmts = new List<IAstNode>();
+        while (CurrentTokenKind() != TokenKind.RightBrace)
+            stmts.Add(ParseStmt());
+
+        Consume(TokenKind.RightBrace);
+
+        return new Loop(expr, stmts, loopToken);
+    }
 
     private IAstNode For()
     {
