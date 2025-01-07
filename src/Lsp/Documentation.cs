@@ -194,6 +194,25 @@ public static class Documentation
             ],
             InsertText = "abs($1)"
         },
+        new NativeFunctionDoc
+        {
+            Label = "time",
+            Title = "Time",
+            Detail = "number time()",
+            DocDescription = ["Return the the miliseconds elapsed since the program started."],
+            Parameters = [],
+            Returns = ("number", "The amount of miliseconds."),
+            Examples = [
+                "```",
+                "var start = time();",
+                "for i in 0:100000 { print(\"hello\"); }",
+
+                "var end = time();",
+                "print(\"elapsed time: \" + (end-start) + \" ms\");",
+                "```"
+            ],
+            InsertText = "time()"
+        },
     };
 }
 

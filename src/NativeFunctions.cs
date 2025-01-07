@@ -14,9 +14,30 @@ public class NativeFunctions
             "parse" => new Parse(parameters, v.Token),
             "read_input" => new ReadInput(parameters, v.Token),
             "abs" => new Abs(parameters, v.Token),
+            "time" => new Time(parameters, v.Token),
             _ => null
 
         };
+    }
+}
+
+// TODO: WriteFile? Time! for benchmarks
+public class Time : IAstNode
+{
+    Token _token;
+
+    public Time(List<IAstNode> parameters, Token token)
+    {
+        _token = token;
+    }
+
+    public void Analyze(Analyzer a)
+    {
+    }
+
+    public object? Interpret(Interpreter inter)
+    {
+        return (double)Environment.TickCount;
     }
 }
 
