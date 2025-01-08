@@ -1,4 +1,4 @@
-public class PrefixBang(IAstNode node, Token token) : IAstNode
+public class PrefixBang(IAstNode node) : IAstNode
 {
     public void Analyze(Analyzer a)
     {
@@ -7,9 +7,12 @@ public class PrefixBang(IAstNode node, Token token) : IAstNode
 
     public object? Interpret(Interpreter inter)
     {
-        if (node.Interpret(inter) is not bool b)
-            throw new SparvException("'!' expression must be followed by a boolean", token);
-        return !b;
+        return !(node.Interpret(inter) switch
+        {
+            bool b => b,
+            null => false,
+            _ => true,
+        });
     }
 }
 

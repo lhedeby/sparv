@@ -14,14 +14,21 @@ public class If(IAstNode expr, List<IAstNode> ifStmts, List<IAstNode> elseStmts)
 
     public object? Interpret(Interpreter inter)
     {
-        var t = expr.Interpret(inter);
-        if (t is bool && (bool)t)
+        var boolean = expr.Interpret(inter) switch
+        {
+            bool b => b,
+            null => false,
+            _ => true,
+        };
+        if (boolean)
         {
             ifStmts.Run(inter);
+            if (inter.HasReturned) return null;
         }
         else
         {
             elseStmts.Run(inter);
+            if (inter.HasReturned) return null;
         }
         return null;
     }

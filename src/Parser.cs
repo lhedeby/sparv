@@ -371,7 +371,7 @@ public class Parser
         return token.Kind switch
         {
             TokenKind.Minus => new PrefixMinus(ParseExpr(PrefixPrecedence()), token),
-            TokenKind.Bang => new PrefixBang(ParseExpr(PrefixPrecedence()), token),
+            TokenKind.Bang => new PrefixBang(ParseExpr(PrefixPrecedence())),
             TokenKind.LeftBracket => List(),
             TokenKind.Identifier => Identifier(token),
             TokenKind.Number => Number(token),
