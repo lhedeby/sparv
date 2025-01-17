@@ -15,6 +15,8 @@ public class NativeFunctions
             "read_input" => new ReadInput(parameters, v.Token),
             "abs" => new Abs(parameters, v.Token),
             "time" => new Time(parameters, v.Token),
+            "xor" => new Xor(parameters, v.Token),
+            "sort" => new Sort(parameters, v.Token),
             _ => null
 
         };
@@ -38,6 +40,61 @@ public class Time : IAstNode
     public object? Interpret(Interpreter inter)
     {
         return (double)Environment.TickCount;
+    }
+}
+
+public class Sort : IAstNode
+{
+    Token _token;
+    IAstNode _parameter;
+
+
+    public Sort(List<IAstNode> parameters, Token token)
+    {
+        _token = token;
+
+        if (parameters.Count != 1)
+            throw new SparvException("abs() takes 1 argument", token);
+        _parameter = parameters[0];
+    }
+
+    public void Analyze(Analyzer a)
+    {
+    }
+
+    public object? Interpret(Interpreter inter)
+    {
+        if (_parameter.Interpret(inter) is not RuntimeList l)
+            throw new SparvException("Sort parameter must be a list", _token);
+        l.List.Sort();
+        return null;
+    }
+}
+
+
+public class Xor : IAstNode
+{
+    Token _token;
+    List<IAstNode> _parameters;
+
+
+    public Xor(List<IAstNode> parameters, Token token)
+    {
+        _token = token;
+        _parameters = parameters;
+    }
+
+    public void Analyze(Analyzer a)
+    {
+    }
+
+    public object? Interpret(Interpreter inter)
+    {
+        if (_parameters[0].Interpret(inter) is not double a)
+            throw new SparvException("xor error", _token);
+        if (_parameters[1].Interpret(inter) is not double b)
+            throw new SparvException("xor error", _token);
+        return (double)((ulong)a ^ (ulong)b);
     }
 }
 
