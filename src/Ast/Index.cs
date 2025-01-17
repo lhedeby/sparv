@@ -6,15 +6,27 @@ public class Index(IAstNode list, IAstNode index, Token token) : IAstNode
         {
             int n => n,
             double n => (int)n,
-            _ => throw new SparvException($"List access must be a number", token)
+            _ => throw new SparvException("List access must be a number", token)
         };
+        if (i < 0)
+            throw new SparvException("Index cant be negative", token);
 
-        return list.Interpret(inter) switch
+        var r = list.Interpret(inter);
+
+        if (r is RuntimeList rl)
         {
-            RuntimeList list => list.List[(int)i],
-            string s => s[(int)i].ToString(),
-            _ => throw new SparvException("Trying to index something that should not be indexed", token)
-        };
+            if (i >= rl.List.Count)
+                throw new SparvException("Index cant be higher than the length of the list", token);
+            return rl.List[i];
+        }
+
+        if (r is string s)
+        {
+            if (i >= s.Length)
+                throw new SparvException("Index cant be higher than the length of the string", token);
+            return s[i].ToString();
+        }
+        throw new SparvException("Not a list or string", token);
     }
 
     public IAstNode List { get => list; }
