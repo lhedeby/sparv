@@ -10,15 +10,17 @@ public class While(IAstNode expr, List<IAstNode> stmts) : IAstNode
     public object? Interpret(Interpreter inter)
     {
 
-        while (expr.Interpret(inter) is bool b && b)
-        // var e = expr.Interpret(inter);
-        // while (e is bool && (bool)e)
+        while (expr.Interpret(inter) switch
+        {
+            bool b => b,
+            null => false,
+            _ => true,
+        })
         {
             inter.BeginScope();
             stmts.Run(inter);
             inter.EndScope();
             if (inter.HasReturned) return null;
-            // e = expr.Interpret(inter);
         }
         return null;
     }

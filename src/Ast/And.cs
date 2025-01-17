@@ -8,13 +8,20 @@ public class And(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
 
     public object? Interpret(Interpreter inter)
     {
-        if (lhs.Interpret(inter) is not bool l)
-            throw new SparvException("Left hand side is not a bool", token);
-        if (!l) return false;
+        var b1 = lhs.Interpret(inter) switch
+        {
+            bool b => b,
+            null => false,
+            _ => true,
+        };
+        if (!b1) return false;
 
-        if (rhs.Interpret(inter) is not bool r)
-            throw new SparvException("Right hand side is not a bool", token);
-        return r;
+        return rhs.Interpret(inter) switch
+        {
+            bool b => b,
+            null => false,
+            _ => true,
+        };
     }
 
     public override string ToString()
