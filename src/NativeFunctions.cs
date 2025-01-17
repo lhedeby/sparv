@@ -17,6 +17,7 @@ public class NativeFunctions
             "time" => new Time(parameters, v.Token),
             "xor" => new Xor(parameters, v.Token),
             "sort" => new Sort(parameters, v.Token),
+            "lines" => new Lines(parameters, v.Token),
             _ => null
 
         };
@@ -43,11 +44,39 @@ public class Time : IAstNode
     }
 }
 
-public class Sort : IAstNode
+public class Lines : IAstNode
 {
     Token _token;
     IAstNode _parameter;
 
+    public Lines(List<IAstNode> parameters, Token token)
+    {
+        if (parameters.Count != 1)
+            throw new SparvException("lines() takes 1 argument", token);
+        _parameter = parameters[0];
+        _token = token;
+    }
+
+    public void Analyze(Analyzer a)
+    {
+        _parameter.Analyze(a);
+    }
+
+    public object? Interpret(Interpreter inter)
+    {
+        return _parameter.Interpret(inter) switch
+        {
+            string s => new RuntimeList(s.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Select(x => (object?)x).ToList()),
+            _ => throw new SparvException("argument must be a string", _token)
+
+        };
+    }
+}
+
+public class Sort : IAstNode
+{
+    Token _token;
+    IAstNode _parameter;
 
     public Sort(List<IAstNode> parameters, Token token)
     {
@@ -60,6 +89,7 @@ public class Sort : IAstNode
 
     public void Analyze(Analyzer a)
     {
+        _parameter.Analyze(a);
     }
 
     public object? Interpret(Interpreter inter)
@@ -86,6 +116,8 @@ public class Xor : IAstNode
 
     public void Analyze(Analyzer a)
     {
+        foreach (var p in _parameters)
+            p.Analyze(a);
     }
 
     public object? Interpret(Interpreter inter)
