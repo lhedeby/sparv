@@ -21,4 +21,4 @@ If you're feeling fancy you can add the folder to your PATH to run sparv from wh
 
 ## Getting started
 
-For a guide and tips on getting started checkout [getting started]()
+For a guide and tips on getting started checkout [getting started](https://github.com/lhedeby/sparv/blob/main/docs/getting-started.md)
