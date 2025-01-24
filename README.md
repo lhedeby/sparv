@@ -9,12 +9,12 @@ This is the main repo for the programming language Sparv. It is a dynamically ty
 you with your needs.
 
 ## Installation
-To get started you can either download the latest binaries from releases or build it yourself using [.NET](https://github.com/dotnet/core) 
+To get started you can build it yourself using [.NET](https://github.com/dotnet/core) 
 
 ```sh
     git clone https://github.com/lhedeby/sparv
     cd sparv/src
-    dotnet build --configuration Release"
+    dotnet build --configuration Release
 ```
 After this you should add the build directory to your path. The following commands assumes your current directory is ```sparv/src```.
 Feel free to move the executable and add the $PATH in any way you want. The following is just a suggestion:
