@@ -2,23 +2,28 @@
 {
     private static async Task Main(string[] args)
     {
+        // VSCode passes extra arguments when starting the lsp.
+        // To avoid any issues we start the lsp server if at
+        // least 1 arg is 'lsp'
+        if (args.Contains("lsp"))
+        {
+            await LspServer.Run();
+            return;
+        }
+
+        if (args.Contains("help"))
+        {
+            Console.WriteLine(HelpMessage);
+            return;
+        }
+
         if (args.Length != 1)
         {
             Console.WriteLine(ErrorMessage);
             return;
         }
-        var command = args[0];
 
-        if (command == "lsp")
-        {
-            await LspServer.Run();
-            return;
-        }
-        if (command == "help")
-        {
-            Console.WriteLine(ErrorMessage);
-            return;
-        }
+        var command = args[0];
 
         if (!command.EndsWith(".sparv"))
         {
