@@ -1,4 +1,4 @@
-public class NativeFunctions
+public static class NativeFunctions
 {
     public static IAstNode? Get(IAstNode node, List<IAstNode> parameters)
     {
@@ -24,7 +24,6 @@ public class NativeFunctions
     }
 }
 
-// TODO: WriteFile? Time! for benchmarks
 public class Time : IAstNode
 {
     Token _token;
@@ -210,11 +209,13 @@ public class Parse : IAstNode
 public class Split : IAstNode
 {
     List<IAstNode> _parameters;
+    Token _token;
     public Split(List<IAstNode> parameters, Token token)
     {
         if (parameters.Count != 2)
             throw new SparvException("split() takes 2 parameters", token.Line, token.Start, token.End);
         _parameters = parameters;
+        _token = token;
     }
 
     public void Analyze(Analyzer a)
@@ -225,15 +226,18 @@ public class Split : IAstNode
 
     public object? Interpret(Interpreter inter)
     {
-        var s = _parameters[0].Interpret(inter).ToString();
-        var de = (_parameters[1].Interpret(inter) as string)
+        if (_parameters[0].Interpret(inter) is not string s)
+            throw new SparvException("First argument must be a string", _token);
+        if (_parameters[1].Interpret(inter) is not string delim)
+            throw new SparvException("First argument must be a string", _token);
+        var de = delim
             .Replace("\\n", "\n")
             .Replace("\\r", "\r");
 
         return new RuntimeList(
-                    s.Split(de, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(x => (object?)x)
-                    .ToList());
+            s.Split(de, StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => (object?)x)
+            .ToList());
     }
 }
 

@@ -31,8 +31,8 @@ public record class CompletionParams(
                 {
                     Label = key,
                     Kind = CompletionItemKind.Function,
-                    LabelDetails = new($"{key}({string.Join(", ",value)})", null),
-                    Detail = $"fun {key}({string.Join(", ",value)})",
+                    LabelDetails = new($"{key}({string.Join(", ", value)})", null),
+                    Detail = $"fun {key}({string.Join(", ", value)})",
                     Documentation = null,
                     InsertText = $"{key}(",
                     InsertTextFormat = InsertTextFormat.PlainText
@@ -42,7 +42,17 @@ public record class CompletionParams(
         }
 
         list.AddRange(Documentation.CompletionItems);
+        list.AddRange(Keywords.CompletionItems);
         return list;
     }
+}
+
+public static class Keywords
+{
+    public static List<CompletionItem> CompletionItems => _completionItems;
+    private static readonly List<CompletionItem> _completionItems =
+        new[] { "var", "fun", "nil", "true", "and", "else", "if", "or", "return", "while", "false", "for", "loop", "in", "match", "import" }
+        .Select(kw => new CompletionItem() { Label = kw, Kind = CompletionItemKind.Keyword, InsertText = kw })
+        .ToList();
 }
 

@@ -1,4 +1,4 @@
-public class For(string i, IAstNode expr, List<IAstNode> stmts, Token token, Token start, Token end) : IAstNode
+public class For(string i, IAstNode expr, List<IAstNode> stmts, Token token) : IAstNode
 {
     public void Analyze(Analyzer a)
     {

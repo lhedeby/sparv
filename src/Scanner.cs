@@ -152,6 +152,7 @@ class Scanner
         var kind = Keywords(_source[_start.._current]);
         return MakeToken(kind);
     }
+
     private Token Number()
     {
         while (!IsAtEnd())
@@ -165,6 +166,7 @@ class Scanner
         }
         return MakeToken(TokenKind.Number);
     }
+
     private Token String()
     {
         while (!IsAtEnd() && Advance() != '"') ;

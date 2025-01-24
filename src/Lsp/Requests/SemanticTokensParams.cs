@@ -7,7 +7,7 @@ public record class SemanticTokensParams(TextDocumentIdentifier TextDocument) : 
 
         try
         {
-            var tokens = scanner.Tokens().ToList();
+            var tokens = scanner.Tokens().Where(token => token.Kind != TokenKind.EndOfFile).ToList();
 
             var res = new int[tokens.Count * 5];
             var previousLine = 0;
@@ -31,8 +31,8 @@ public record class SemanticTokensParams(TextDocumentIdentifier TextDocument) : 
 
             return new SemanticTokens(res);
         }
-        catch (SparvException _se) { }
-        catch (Exception _e) { }
+        catch (SparvException) { }
+        catch (Exception) { }
         return null;
     }
 

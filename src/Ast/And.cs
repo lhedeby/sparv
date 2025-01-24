@@ -1,4 +1,4 @@
-public class And(IAstNode lhs, IAstNode rhs, Token token) : IAstNode
+public class And(IAstNode lhs, IAstNode rhs) : IAstNode
 {
     public void Analyze(Analyzer a)
     {

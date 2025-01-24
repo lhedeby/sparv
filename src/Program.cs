@@ -1,76 +1,87 @@
-﻿
-if (args[0] == "lsp")
+﻿internal class Program
 {
-    var server = new LspServer();
-    await server.Start();
-    return;
-}
-Console.WriteLine($"Running: {args[0]}");
-
-
-using var sr = new StreamReader(args[0]);
-var source = sr.ReadToEnd();
-var parser = new Parser(source);
-var root = parser.Parse();
-if (parser.HasErrors)
-{
-    foreach (var e in parser.Errors)
+    private static async Task Main(string[] args)
     {
-        e.PrintError(parser.Source);
+        if (args.Length != 1)
+        {
+            Console.WriteLine(ErrorMessage);
+            return;
+        }
+        var command = args[0];
+
+        if (command == "lsp")
+        {
+            await LspServer.Run();
+            return;
+        }
+        if (command == "help")
+        {
+            Console.WriteLine(ErrorMessage);
+            return;
+        }
+
+        if (!command.EndsWith(".sparv"))
+        {
+            Console.WriteLine(ErrorMessage);
+            return;
+        }
+
+        Console.WriteLine($"Running: {command}");
+
+        using var sr = new StreamReader(command);
+        var source = sr.ReadToEnd();
+        var parser = new Parser(source);
+        var root = parser.Parse();
+        if (parser.HasErrors)
+        {
+            foreach (var e in parser.Errors)
+            {
+                e.PrintError(parser.Source);
+            }
+            return;
+        }
+
+        var interpreter = new Interpreter();
+        try
+        {
+            root.Interpret(interpreter);
+        }
+        catch (SparvException se)
+        {
+            se.PrintError(parser.Source);
+        }
+
+        Console.WriteLine("successfully ran program");
     }
-    return;
+
+    private static string ErrorMessage =>
+    """
+    Error: Invalid usage.
+
+    To execute a Sparv file, use the following format:
+        sparv <filename>
+
+    Example:
+        sparv my_script.sparv
+
+    Hint: Ensure that the filename includes the correct path and the `.sparv` extension.
+
+    For more details, run:
+        sparv help
+    """;
+
+    private static string HelpMessage =>
+    """
+    To execute a Sparv file, use the following format:
+        sparv <filename>
+
+    Example:
+        sparv my_script.sparv
+
+    Hint: Ensure that the filename includes the correct path and the `.sparv` extension.
+
+    For more details, run:
+        sparv help
+    """;
 }
-
-// var analyzer = new Analyzer(root);
-// analyzer.Run();
-// if (analyzer.HasErrors)
-// {
-//     Console.WriteLine("Found error!");
-//     foreach (var e in analyzer.Errors)
-//     {
-//         var lines = parser.Source.Split('\n');
-//         var maxLen = e.Line.ToString().Length + 2;
-//         Console.WriteLine($"{(e.Line - 1).ToString().PadRight(maxLen)}| ...");
-//         Console.WriteLine($"{"".PadLeft(maxLen)}|");
-//         Console.WriteLine($"{e.Line.ToString().PadRight(maxLen)}| {lines[e.Line]}");
-//         Console.WriteLine($"{"".PadRight(maxLen)}|{"".PadLeft(e.Start + 1)}{"".PadRight(e.End - e.Start, '^')}");
-//         Console.WriteLine($"{(e.Line + 1).ToString().PadRight(maxLen)}| ...");
-//         Console.WriteLine($">>> {e} at {e.Line}:{e.Start}");
-//     }
-//     Console.WriteLine("Found error!");
-//     return;
-// }
-
-
-var interpreter = new Interpreter();
-try
-{
-    root.Interpret(interpreter);
-}
-catch (SparvException se)
-{
-    se.PrintError(parser.Source);
-}
-// try
-// {
-//     var root = parser.Parse();
-//     var interpreter = new Interpreter();
-//     root.Interpret(interpreter);
-// }
-// catch (SparvException e)
-// {
-//     var lines = parser.Source.Split('\n');
-//     var maxLen = e.Line.ToString().Length + 2;
-//     Console.WriteLine($"{(e.Line - 1).ToString().PadRight(maxLen)}| ...");
-//     Console.WriteLine($"{"".PadLeft(maxLen)}|");
-//     Console.WriteLine($"{e.Line.ToString().PadRight(maxLen)}| {lines[e.Line]}");
-//     Console.WriteLine($"{"".PadRight(maxLen)}|{"".PadLeft(e.Start + 1)}{"".PadRight(e.End - e.Start, '^')}");
-//     Console.WriteLine($"{(e.Line + 1).ToString().PadRight(maxLen)}| ...");
-//     Console.WriteLine($">>> {e} at {e.Line}:{e.Start}");
-// }
-
-// interpreter.PrintVars();
-Console.WriteLine("successfully ran program");
-
-
 

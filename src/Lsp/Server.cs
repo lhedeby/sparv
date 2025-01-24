@@ -18,6 +18,11 @@ public static class ExtensionsMethods
 
 public class LspServer
 {
+    public static async Task Run()
+    {
+        var server = new LspServer();
+        await server.Start();
+    }
     const string CONTENT_LENGTH = "Content-Length: ";
 
     private StreamWriter _logger;
@@ -30,17 +35,16 @@ public class LspServer
         _logger.WriteLine($"{DateTime.Now.ToString()}: {msg}");
         _logger.Flush();
     }
-    public LspServer()
+    private LspServer()
     {
         _logger = new StreamWriter("./log");
         _state = new();
         _lifecycle = Lifecyle.Running;
         _cts = new();
         Log("server created");
-        var test = DateTime.Now;
     }
 
-    public async Task Start()
+    private async Task Start()
     {
         Log("Lsp server started");
         var stdin = Console.OpenStandardInput();

@@ -60,8 +60,6 @@ public class Parser
         TokenKind.If => If(),
         TokenKind.Return => Return(),
         TokenKind.Var => Var(),
-        // TODO: Should this be here?
-        // TokenKind.Identifier => Identifier(),
         TokenKind.For => For(),
         TokenKind.Loop => Loop(),
         _ => Expr()
@@ -170,25 +168,7 @@ public class Parser
     }
     private IAstNode Identifier(Token token)
     {
-        IAstNode expr = new Variable(token);
-
-        // if (lhs is Variable)
-        // {
-        //     var nativeFunction = NativeFunctions.Get(((Variable)lhs).Name, parameters);
-        //     if (nativeFunction != null) return nativeFunction!;
-        // }
-
-        // for (; ; )
-        // {
-        //     var newExpr = CurrentTokenKind() switch
-        //     {
-        //         TokenKind.LeftParen => Call(token, expr),
-        //         _ => null
-        //     };
-        //     if (newExpr is null) break;
-        //     expr = newExpr;
-        // }
-        return expr;
+        return new Variable(token);
     }
 
     private IAstNode Grouping()
@@ -216,23 +196,21 @@ public class Parser
 
     private IAstNode For()
     {
-        var forToken = CurrentToken();
+        var token = CurrentToken();
         Consume(TokenKind.For);
         var identifier = CurrentToken();
         Consume(TokenKind.Identifier);
         Consume(TokenKind.In);
         var expr = ParseExpr(0);
 
-        var startToken = CurrentToken();
         Consume(TokenKind.LeftBrace);
         var stmts = new List<IAstNode>();
         while (CurrentTokenKind() != TokenKind.RightBrace)
             stmts.Add(ParseStmt());
 
-        var endToken = CurrentToken();
         Consume(TokenKind.RightBrace);
 
-        return new For(identifier.Value, expr, stmts, forToken, startToken, endToken);
+        return new For(identifier.Value, expr, stmts, token);
     }
 
     /*
@@ -267,8 +245,8 @@ public class Parser
         var rhs = ParseExpr(InfixPrecedence(token.Kind));
         return token.Kind switch
         {
-            TokenKind.Or => new Or(lhs, rhs, token),
-            TokenKind.And => new And(lhs, rhs, token),
+            TokenKind.Or => new Or(lhs, rhs),
+            TokenKind.And => new And(lhs, rhs),
             TokenKind.BangEqual => new NotEqual(lhs, rhs),
             TokenKind.EqualEqual => new Equal(lhs, rhs),
             TokenKind.Greater => new Greater(lhs, rhs, token),
