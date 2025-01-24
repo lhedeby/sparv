@@ -9,32 +9,26 @@ This is the main repo for the programming language Sparv. It is a dynamically ty
 you with your needs.
 
 ## Installation
-To get started you can build it yourself using [.NET](https://github.com/dotnet/core) 
 
-```sh
-    git clone https://github.com/lhedeby/sparv
-    cd sparv/src
-    dotnet build --configuration Release
-```
-After this you should add the build directory to your path. The following commands assumes your current directory is ```sparv/src```.
-Feel free to move the executable and add the $PATH in any way you want. The following is just a suggestion:
+### Prerequisites
+- [git](https://git-scm.com)
+- [.NET 8](https://github.com/dotnet/core)
+
+There are install scripts for powershell and linux. So to install just clone and run the corresponding script.
 
 ### Windows
-```pwsh
-    $currentPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
-    cd bin/Release/net8.0/
-    $newPath = $currentPath + ";$pwd"
-    [Environment]::SetEnvironmentVariable("Path", $newPath, "Machine")
-    cd ../../..
+```sh
+    # Requires an elevated powershell prompt
+    git clone https://github.com/lhedeby/sparv
+    .\sparv\install.ps1
 ```
 ### Linux
-If you are using bash:
 ```sh
-    cd bin/Release/net8.0/
-    echo 'export PATH="$(pwd):$PATH"' >> ~/.bashrc
-    source ~/.bashrc
-    cd ../../..
+    git clone https://github.com/lhedeby/sparv
+    sudo chmod +x ./sparv/install.sh
+    sudo ./sparv/install.sh
 ```
+The ```sparv``` command should now be available from your terminal. If not - try opening a new terminal.  
 
 ## Getting started
 
