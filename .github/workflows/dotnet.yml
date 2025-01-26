@@ -28,7 +28,7 @@ jobs:
       run: dotnet build src/sparv.csproj --no-restore --configuration Release
       
     - name: Create GitHub Release
-      id: create_release
+      id: create-release
       uses: actions/create-release@v1
       with:
         tag_name: ${{ github.ref_name }}
